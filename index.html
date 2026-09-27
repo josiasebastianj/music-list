@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="id">
+<!-- Song Structure Timeline v1.4.7 | Major.Minor.Release -->
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Song Structure Timeline v1.4.7</title>
+<style>
+:root{
+  --bg:#05090f; --panel:#0b1420; --panel2:#0e1926; --text:#f3f6fb;
+  --muted:#9eacc0; --line:#26374c; --accent:#4da3ff; --danger:#ff5f7a;
+  --green:#18d47b; --orange:#ff9b2f; --cyan:#14cbe6; --pink:#ef4e9b;
+}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at 50% -10%,#102033 0,#05090f 42%,#03070c 100%);
+font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text)}
+button,input,textarea{font:inherit}
+button{cursor:pointer}
+.app{max-width:1180px;margin:auto;padding:34px 22px 50px}
+.header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:28px}
+h1{font-size:clamp(30px,5vw,58px);line-height:1;margin:0 0 10px;letter-spacing:-2px}
+.subtitle{color:#a9c0e0;font-size:16px;margin-bottom:14px}.meta-grid{display:grid;grid-template-columns:minmax(180px,240px) minmax(220px,1fr);gap:10px;max-width:760px}.meta-field{display:flex;flex-direction:column;gap:5px}.meta-field label{font-size:10px;letter-spacing:1px;color:#7fa7d6;font-weight:800}.meta-field input{width:100%;padding:9px 10px;border:1px solid #26374c;border-radius:8px;background:#08111b;color:var(--text);outline:none}.meta-field input:focus{border-color:var(--accent)}
+.song-title{display:block;width:min(760px,100%);margin:0 0 10px;padding:0;border:0;border-bottom:1px solid transparent;
+background:transparent;color:var(--text);font-size:clamp(30px,5vw,58px);font-weight:800;line-height:1;
+letter-spacing:-2px;outline:none}
+.song-title:hover{border-bottom-color:#26374c}
+.song-title:focus{border-bottom-color:var(--accent)}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:#0d1826;color:var(--text);border-radius:10px;padding:10px 14px}
+.btn:hover{border-color:#58708f;background:#122033}
+.btn.primary{border-color:#2d83df;background:#10335a}
+.btn.danger{border-color:#713044;color:#ff9db0}
+.section-title{font-size:14px;letter-spacing:1.4px;font-weight:800;color:#9fb5d6;margin:22px 0 10px}
+.details{display:flex;flex-direction:column;gap:10px}
+ .card{display:grid;grid-template-columns:7px 250px minmax(0,1fr) 44px;gap:0;border:1px solid var(--line);border-radius:12px;background:linear-gradient(90deg,#0b1521,#09121c);overflow:hidden;min-width:0;align-items:stretch}
+.card .accent{width:7px;background:var(--accent);grid-column:1;grid-row:1}
+.card-main{grid-column:2;padding:16px 18px;display:flex;align-items:center;gap:10px;min-width:0;border-right:1px solid #25364b}
+.dot{width:13px;height:13px;border-radius:50%;background:var(--accent);flex:0 0 auto}
+.card-name-input{width:100%;min-width:0;padding:0;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--text);font-weight:800;font-size:22px;line-height:1.2;outline:none}
+.card-name-input:hover{border-color:#26374c;background:#08111b;padding:4px 6px;margin:-4px -6px}
+.card-name-input:focus{border-color:var(--accent);background:#08111b;padding:4px 6px;margin:-4px -6px}
+.note{grid-column:3;padding:16px 20px;min-width:0;display:flex;align-items:center}
+.note-label{display:none}
+.note-input{width:100%;min-height:0;resize:vertical;background:transparent;border:1px solid transparent;color:#dce7f5;border-radius:8px;padding:0;line-height:1.4;font-size:18px;font-weight:500}
+.note-input:hover{border-color:#26374c;background:#08111b;padding:3px 5px;margin:-3px -5px}
+.note-input:focus{border-color:var(--accent);background:#08111b;outline:none;padding:3px 5px;margin:-3px -5px}
+.card-tools{grid-column:4;grid-row:1;display:flex;align-items:center;justify-content:center;border-left:1px solid #25364b}
+.card-tools{flex-direction:column;gap:5px;padding:6px}.move-btn,.delete-btn{width:28px;height:28px;padding:0;border-radius:8px;font-size:16px;line-height:1}.move-btn{border:1px solid #2d4968;background:#0d1b2b;color:#b9d5f5}.move-btn:hover:not(:disabled){border-color:#4da3ff;background:#122a43}.move-btn:disabled{opacity:.28;cursor:default}.delete-btn{border:1px solid #713044;background:#24101a;color:#ff9db0}
+.add-detail{margin-top:12px}
+.empty{color:var(--muted);font-size:13px;padding:18px;border:1px dashed #2b3d52;border-radius:12px}
+@media(max-width:850px){
+ .card{grid-template-columns:7px 1fr 42px}
+ .card .accent{grid-column:1;grid-row:1 / span 3}
+ .card-main{grid-column:2;grid-row:1;padding:14px 14px;border-right:0}
+ .note{grid-column:2;grid-row:2;padding:0 14px 16px;border-left:0;border-top:1px solid #25364b}
+ .note-input{font-size:17px;padding-top:14px}
+ .card-tools{grid-column:3;grid-row:1 / span 2}
+ .header{flex-direction:column}
+}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="title-area">
+      <input id="songTitle" class="song-title" value="Song Title" aria-label="Judul lagu" placeholder="Judul lagu">
+      <div class="subtitle">Peta lagu</div>
+      <div class="meta-grid">
+        <div class="meta-field"><label for="baseKey">KUNCI DASAR</label><input id="baseKey" type="text" placeholder="Contoh: G" aria-label="Kunci dasar"></div>
+        <div class="meta-field"><label for="serviceDate">TANGGAL IBADAH</label><input id="serviceDate" type="date" aria-label="Tanggal ibadah"></div>
+        <div class="meta-field full"><label for="serviceTitle">JUDUL IBADAH</label><input id="serviceTitle" type="text" placeholder="Contoh: Ibadah Minggu Pagi" aria-label="Judul ibadah"></div>
+      </div>
+    </div>
+    <div class="toolbar">
+      <button class="btn" id="exportBtn">Export JSON</button>
+      <button class="btn" id="exportImageBtn">Export Gambar</button>
+      <button class="btn" id="importBtn">Import JSON</button>
+      <button class="btn danger" id="resetBtn">Reset</button>
+      <input id="fileInput" type="file" accept=".json,application/json" hidden>
+    </div>
+  </header>
+
+  <div class="section-title">SONG DETAILS</div>
+  <div class="details" id="details"></div>
+
+</div>
+
+<script>
+(() => {
+const APP_VERSION="1.4.7";
+const KEY="songStructureTimeline_v1_4_2";
+const PREVIOUS_KEY="songStructureTimeline_v1_4_1";
+const PREVIOUS_KEY_2="songStructureTimeline_v1_3_0";
+const colors=["#3182f6","#18d47b","#ff9b2f","#14cbe6","#18d47b","#ff9b2f","#ef4e9b","#ffad32","#9747ff"];
+
+const blankState={
+  title:"",
+  baseKey:"",
+  serviceDate:"",
+  serviceTitle:"",
+  sections:[]
+};
+
+const defaults={
+  title:"Song Title",
+  baseKey:"",
+  serviceDate:"",
+  serviceTitle:"",
+  sections:[
+    {name:"Intro",color:colors[0],note:"Bangun ambience. Jangan terlalu penuh. "},
+    {name:"Verse 1",color:colors[1],note:"Jaga ruang untuk vocal. Jangan terlalu ramai."},
+    {name:"Chorus 1",color:colors[2],note:"Fokus energi dan ending phrase bersama."},
+    {name:"Intro / Turn",color:colors[3],note:"Turunkan energi lalu siapkan Verse 2."},
+    {name:"Verse 2",color:colors[4],note:"Mulai lebih hidup dari Verse 1. Bangun menuju chorus."},
+    {name:"Chorus 2",color:colors[5],note:"Pertahankan energi. Perhatikan cut/ending."},
+    {name:"Bridge",color:colors[6],note:"Berikan ruang. Naikkan tensi sedikit demi sedikit."},
+    {name:"Final Chorus",color:colors[7],note:"Puncak lagu. Tandai repeat dan final hit dengan jelas."},
+    {name:"Outro",color:colors[8],note:"Jangan buru-buru berhenti. Tunggu cue final."}
+  ]
+};
+
+let state=load();
+
+function load(){
+ try {
+   const current=JSON.parse(localStorage.getItem(KEY));
+   if(current && Array.isArray(current.sections)) return {...current,title:current.title||"Song Title",baseKey:current.baseKey||"",serviceDate:current.serviceDate||"",serviceTitle:current.serviceTitle||""};
+   const previous=JSON.parse(localStorage.getItem(PREVIOUS_KEY));
+   if(previous?.sections){
+     const migrated={title:previous.title||"Song Title",baseKey:previous.baseKey||"",serviceDate:previous.serviceDate||"",serviceTitle:previous.serviceTitle||"",sections:previous.sections.map(s=>({
+       name:String(s.name||"Untitled"),color:s.color||"#3182f6",note:String(s.note||"")
+     }))};
+     localStorage.setItem(KEY,JSON.stringify(migrated));
+     return migrated;
+   }
+   const previous2=JSON.parse(localStorage.getItem(PREVIOUS_KEY_2));
+   if(previous2?.sections){
+     const migrated={title:previous2.title||"Song Title",baseKey:"",serviceDate:"",serviceTitle:"",sections:previous2.sections.map(s=>({name:String(s.name||"Untitled"),color:s.color||"#3182f6",note:String(s.note||"")}))};
+     localStorage.setItem(KEY,JSON.stringify(migrated));
+     return migrated;
+   }
+ } catch(e){}
+ return structuredClone(defaults);
+}
+function persist(){ localStorage.setItem(KEY,JSON.stringify(state)); }
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
+
+function render(){
+ document.getElementById("songTitle").value=state.title||"";
+ document.getElementById("baseKey").value=state.baseKey||"";
+ document.getElementById("serviceDate").value=state.serviceDate||"";
+ document.getElementById("serviceTitle").value=state.serviceTitle||"";
+ document.getElementById("baseKey").value=state.baseKey||"";
+ document.getElementById("serviceDate").value=state.serviceDate||"";
+ document.getElementById("serviceTitle").value=state.serviceTitle||"";
+
+ const details=document.getElementById("details");
+ details.innerHTML="";
+
+ state.sections.forEach((s,i)=>{
+   const card=document.createElement("div");
+   card.className="card";
+   card.style.borderColor=(s.color||"#3182f6")+"55";
+
+   card.innerHTML=`<div class="accent" style="background:${s.color||"#3182f6"}"></div>
+     <div class="card-main">
+       <span class="dot" style="background:${s.color||"#3182f6"}"></span>
+       <input class="card-name-input" data-name="${i}" value="${esc(s.name||"")}" aria-label="Nama section" placeholder="Nama section">
+     </div>
+     <div class="note">
+       <div class="note-label">NOTES</div>
+       <textarea class="note-input" data-note="${i}" aria-label="Notes ${esc(s.name)}" placeholder="Tambahkan notes...">${esc(s.note||"")}</textarea>
+     </div>
+     <div class="card-tools">
+       <button class="move-btn" data-up="${i}" type="button" title="Geser ke atas" aria-label="Geser section ke atas" ${i===0?"disabled":""}>↑</button>
+       <button class="delete-btn" data-delete="${i}" type="button" title="Hapus section" aria-label="Hapus section">🗑</button>
+       <button class="move-btn" data-down="${i}" type="button" title="Geser ke bawah" aria-label="Geser section ke bawah" ${i===state.sections.length-1?"disabled":""}>↓</button>
+     </div>`;
+   details.appendChild(card);
+ });
+
+ const add=document.createElement("button");
+ add.className="btn primary add-detail";
+ add.type="button";
+ add.id="addDetail";
+ add.textContent="＋ Tambah Song Detail";
+ details.appendChild(add);
+}
+
+function addSection(){
+ const i=state.sections.length;
+ state.sections.push({
+   name:"New Section",
+   color:colors[i%colors.length],
+   note:""
+ });
+ persist();
+ render();
+ // Focus the newly-created section name so it can be renamed immediately.
+ requestAnimationFrame(()=>{
+   const el=document.querySelector(`[data-name="${i}"]`);
+   if(el){ el.focus(); el.select(); }
+ });
+}
+function moveSection(i, direction){
+ if(i<0 || i>=state.sections.length) return;
+ const target=i+direction;
+ if(target<0 || target>=state.sections.length) return;
+ [state.sections[i],state.sections[target]]=[state.sections[target],state.sections[i]];
+ persist();
+ render();
+}
+function deleteSection(i){
+ if(!state.sections[i]) return;
+ if(!confirm(`Hapus section "${state.sections[i].name}"?`)) return;
+ state.sections.splice(i,1);
+ persist();
+ render();
+}
+
+document.addEventListener("click",e=>{
+ const up=e.target.closest("[data-up]");
+ if(up){ moveSection(Number(up.dataset.up),-1); return; }
+ const del=e.target.closest("[data-delete]");
+ if(del){ deleteSection(Number(del.dataset.delete)); return; }
+ const down=e.target.closest("[data-down]");
+ if(down){ moveSection(Number(down.dataset.down),1); return; }
+ if(e.target.id==="addDetail") addSection();
+});
+
+document.addEventListener("input",e=>{
+ if(e.target.id==="songTitle"){
+   state.title=e.target.value;
+   persist();
+   return;
+ }
+ if(e.target.id==="baseKey"){ state.baseKey=e.target.value; persist(); return; }
+ if(e.target.id==="serviceDate"){ state.serviceDate=e.target.value; persist(); return; }
+ if(e.target.id==="serviceTitle"){ state.serviceTitle=e.target.value; persist(); return; }
+ const name=e.target.closest("[data-name]");
+ if(name){
+   const i=Number(name.dataset.name);
+   if(state.sections[i]){
+     state.sections[i].name=name.value;
+     persist();
+   }
+   return;
+ }
+ const note=e.target.closest("[data-note]");
+ if(note){
+   const i=Number(note.dataset.note);
+   if(state.sections[i]){
+     state.sections[i].note=note.value;
+     persist();
+   }
+ }
+});
+
+
+function wrapLines(ctx,text,maxWidth){
+  const out=[];
+  for(const p of String(text||"").split(/\r?\n/)){
+    if(!p.trim()){out.push("");continue;}
+    let line="";
+    for(const word of p.trim().split(/\s+/)){
+      const test=line?line+" "+word:word;
+      if(ctx.measureText(test).width<=maxWidth) line=test;
+      else if(line){out.push(line);line=word;} else {let chunk="";for(const ch of word){const t=chunk+ch;if(ctx.measureText(t).width>maxWidth&&chunk){out.push(chunk);chunk=ch;}else chunk=t;}line=chunk;}
+    }
+    if(line)out.push(line);
+  }
+  return out.length?out:[""];
+}
+function roundRect(ctx,x,y,w,h,r){const rr=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+rr,y);ctx.arcTo(x+w,y,x+w,y+h,rr);ctx.arcTo(x+w,y+h,x,y+h,rr);ctx.arcTo(x,y+h,x,y,rr);ctx.arcTo(x,y,x+w,y,rr);ctx.closePath();}
+function exportImage(){
+ const scale=2,width=1200,pad=60,cw=width-pad*2,gap=14;
+ const title=String(state.title||"Song Title").trim()||"Song Title";
+ const sections=state.sections||[];
+ const serviceTitle=String(state.serviceTitle||"").trim();
+ const baseKey=String(state.baseKey||"").trim();
+ const date=String(state.serviceDate||"").trim();
+
+ const m=document.createElement("canvas").getContext("2d");
+ m.font="800 54px Inter,Arial,sans-serif";
+ const keyW=190,keyH=112,keyGap=28;
+ const titleW=cw-keyW-keyGap;
+ const titleLines=wrapLines(m,title,titleW).slice(0,2);
+
+ let dateLabel="";
+ if(date){
+   const d=new Date(date+"T00:00:00");
+   dateLabel=d.toLocaleDateString("id-ID",{day:"2-digit",month:"long",year:"numeric"});
+ }
+
+ // Compact header inspired by the v1.4.5 reference: title on the left,
+ // larger service/date metadata beneath it, and a compact key badge on the right.
+ const headerTop=pad;
+ // Align the visible top of the title with the top border of the key badge.
+ // Canvas text is positioned by its baseline, so compensate using font ascent.
+ const titleLineH=62;
+ const titleAscent=(m.measureText("Hg").actualBoundingBoxAscent||50);
+ const titleTop=headerTop+titleAscent;
+ const titleBottom=titleTop+(titleLines.length-1)*titleLineH+(m.measureText("Hg").actualBoundingBoxDescent||10);
+ const metaLineH=30;
+ const metaText=(serviceTitle&&dateLabel)?serviceTitle+" • "+dateLabel:(serviceTitle||dateLabel||"");
+ const metaTop=titleBottom+4;
+ const subtitleTop=metaTop+(metaText?metaLineH+8:0);
+ const subtitleText="Peta lagu";
+ const headerBottom=Math.max(headerTop+keyH,subtitleTop+24)+28;
+ const songDetailsLabelY=headerBottom+2;
+
+ const leftW=240;
+ const rightW=cw-leftW-34;
+ m.font="16px Inter,Arial,sans-serif";
+ let total=songDetailsLabelY+34;
+ sections.forEach(s=>{
+   m.font="700 24px Inter,Arial,sans-serif";
+   const nameLines=wrapLines(m,String(s.name||"Untitled"),leftW-54).slice(0,2);
+   m.font="500 22px Inter,Arial,sans-serif";
+   const note=String(s.note||"").trim();
+   const noteLines=note?wrapLines(m,note,rightW-34):[];
+   const contentLines=Math.max(nameLines.length,noteLines.length||1);
+   total+=Math.max(72,40+contentLines*28+24)+gap;
+ });
+ total+=34+pad;
+
+ const c=document.createElement("canvas");
+ c.width=width*scale;
+ c.height=Math.max(600,total)*scale;
+ const ctx=c.getContext("2d");
+ ctx.scale(scale,scale);
+ const H=c.height/scale;
+
+ const bg=ctx.createLinearGradient(0,0,0,H);
+ bg.addColorStop(0,"#102033");
+ bg.addColorStop(.34,"#05090f");
+ bg.addColorStop(1,"#03070c");
+ ctx.fillStyle=bg;
+ ctx.fillRect(0,0,width,H);
+
+ // Subtle header glow.
+ const glow=ctx.createRadialGradient(pad+250,headerTop+70,20,pad+250,headerTop+70,430);
+ glow.addColorStop(0,"rgba(77,163,255,.10)");
+ glow.addColorStop(1,"rgba(77,163,255,0)");
+ ctx.fillStyle=glow;
+ ctx.fillRect(0,0,width,headerBottom+30);
+
+ // Song title.
+ ctx.fillStyle="#f3f6fb";
+ ctx.font="800 54px Inter,Arial,sans-serif";
+ titleLines.forEach((line,i)=>ctx.fillText(line,pad,titleTop+i*titleLineH));
+
+ // Service/date line — intentionally larger and closer to the song title.
+ if(metaText){
+   const iconX=pad,iconY=metaTop+4;
+   ctx.strokeStyle="#4da3ff";
+   ctx.lineWidth=2;
+   roundRect(ctx,iconX+1,iconY+1,24,22,3);
+   ctx.stroke();
+   ctx.beginPath();
+   ctx.moveTo(iconX+1,iconY+7); ctx.lineTo(iconX+25,iconY+7);
+   ctx.moveTo(iconX+7,iconY-2); ctx.lineTo(iconX+7,iconY+5);
+   ctx.moveTo(iconX+19,iconY-2); ctx.lineTo(iconX+19,iconY+5);
+   ctx.stroke();
+
+   ctx.fillStyle="#b8d0ee";
+   ctx.font="800 24px Inter,Arial,sans-serif";
+   ctx.fillText(metaText,pad+40,metaTop+23);
+ }
+
+ // Supporting subtitle.
+ const subY=subtitleTop;
+ const docX=pad,docY=subY+1;
+ ctx.strokeStyle="#a9bdd7";
+ ctx.lineWidth=2;
+ ctx.beginPath();
+ ctx.moveTo(docX+4,docY); ctx.lineTo(docX+19,docY); ctx.lineTo(docX+25,docY+6);
+ ctx.lineTo(docX+25,docY+25); ctx.lineTo(docX+4,docY+25); ctx.closePath();
+ ctx.moveTo(docX+19,docY); ctx.lineTo(docX+19,docY+7); ctx.lineTo(docX+25,docY+7);
+ ctx.stroke();
+ ctx.beginPath();
+ ctx.moveTo(docX+9,docY+12); ctx.lineTo(docX+20,docY+12);
+ ctx.moveTo(docX+9,docY+17); ctx.lineTo(docX+20,docY+17);
+ ctx.stroke();
+ ctx.fillStyle="#a9bdd7";
+ ctx.font="18px Inter,Arial,sans-serif";
+ ctx.fillText(subtitleText,pad+40,subY+20);
+
+ // Compact key badge — no redundant "BASE KEY" label.
+ const keyX=width-pad-keyW,keyY=headerTop,keyText=baseKey||"—";
+ ctx.fillStyle="#09121c";
+ ctx.strokeStyle=baseKey?"#4da3ff":"#26374c";
+ ctx.lineWidth=1.5;
+ roundRect(ctx,keyX,keyY,keyW,keyH,16);
+ ctx.fill();
+ ctx.stroke();
+
+ ctx.fillStyle="#8fb2da";
+ ctx.font="800 12px Inter,Arial,sans-serif";
+ ctx.fillText("KUNCI DASAR",keyX+20,keyY+25);
+
+ ctx.fillStyle=baseKey?"#f3f6fb":"#6f829a";
+ ctx.font="900 52px Inter,Arial,sans-serif";
+ const keyMeasure=ctx.measureText(keyText).width;
+ ctx.fillText(keyText,keyX+keyW/2-keyMeasure/2,keyY+82);
+
+ // Divider.
+ ctx.strokeStyle="#203044";
+ ctx.lineWidth=1;
+ ctx.beginPath();
+ ctx.moveTo(pad,headerBottom);
+ ctx.lineTo(pad+cw,headerBottom);
+ ctx.stroke();
+
+ let y=songDetailsLabelY+30;
+ ctx.fillStyle="#9fb5d6";
+ ctx.font="800 14px Inter,Arial,sans-serif";
+ ctx.fillText("SONG DETAILS",pad,y);
+ y+=28;
+
+ sections.forEach(s=>{
+   const accent=s.color||"#3182f6";
+   const name=String(s.name||"Untitled");
+   const note=String(s.note||"").trim();
+   m.font="700 24px Inter,Arial,sans-serif";
+   const nameLines=wrapLines(m,name,leftW-54).slice(0,2);
+   m.font="500 22px Inter,Arial,sans-serif";
+   const noteLines=note?wrapLines(m,note,rightW-34):[];
+   const contentLines=Math.max(nameLines.length,noteLines.length||1);
+   const h=Math.max(72,40+contentLines*28+24);
+
+   ctx.fillStyle="#09121c";
+   ctx.strokeStyle=accent+"88";
+   ctx.lineWidth=1;
+   roundRect(ctx,pad,y,cw,h,12);
+   ctx.fill();
+   ctx.stroke();
+   ctx.fillStyle=accent;
+   ctx.fillRect(pad,y,7,h);
+   ctx.beginPath();
+   ctx.arc(pad+34,y+36,7,0,Math.PI*2);
+   ctx.fill();
+   ctx.fillStyle="#f3f6fb";
+   ctx.font="700 24px Inter,Arial,sans-serif";
+   nameLines.forEach((line,i)=>ctx.fillText(line,pad+52,y+42+i*29));
+   ctx.strokeStyle="#25364b";
+   ctx.lineWidth=1;
+   ctx.beginPath();
+   ctx.moveTo(pad+leftW,y+18);
+   ctx.lineTo(pad+leftW,y+h-18);
+   ctx.stroke();
+   if(noteLines.length){
+     ctx.fillStyle="#dce7f5";
+     ctx.font="500 22px Inter,Arial,sans-serif";
+     noteLines.forEach((line,i)=>ctx.fillText(line,pad+leftW+24,y+42+i*32));
+   }
+   y+=h+gap;
+  });
+
+ const link=document.createElement("a");
+ link.download=(title||"song-structure")+".png";
+ link.href=c.toDataURL("image/png");
+ link.click();
+}
+document.getElementById("exportBtn").onclick=()=>{
+ const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+ const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="song-structure.json";a.click();URL.revokeObjectURL(a.href);
+};
+document.getElementById("exportImageBtn").onclick=exportImage;
+document.getElementById("importBtn").onclick=()=>document.getElementById("fileInput").click();
+document.getElementById("resetBtn").onclick=()=>{
+ if(!confirm("Reset semua data ke kondisi awal?")) return;
+ state=structuredClone(blankState);
+ persist();
+ render();
+};
+document.getElementById("fileInput").onchange=e=>{
+ const f=e.target.files[0]; if(!f)return;
+ const r=new FileReader(); r.onload=()=>{
+   try{
+     const x=JSON.parse(r.result);
+     if(!Array.isArray(x.sections))throw new Error();
+     state={title:String(x.title||"Song Title"),sections:x.sections.map(s=>({
+       name:String(s.name||"Untitled"),color:s.color||"#3182f6",
+       note:String(s.note||"")
+     }))};
+     persist();render();
+   }catch(err){alert("File JSON tidak valid.");}
+   e.target.value="";
+ }; r.readAsText(f);
+};
+render();
+})();
+</script>
+</body>
+</html>
