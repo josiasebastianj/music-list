@@ -93,6 +93,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 <script>
 (() => {
 const APP_VERSION="2.1.0";
+// Intentionally frozen at v2_0_0: the storage schema hasn't changed since v2.0.0, so the
+// key is NOT bumped on every release. Do not "fix" this to match APP_VERSION.
 const KEY="setlistApp_v2_0_0";
 const THEME_KEY="setlistApp_theme";
 const LEGACY_KEYS=["songStructureTimeline_v1_4_2","songStructureTimeline_v1_4_1","songStructureTimeline_v1_3_0"];

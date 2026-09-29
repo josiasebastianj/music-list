@@ -1,3 +1,9 @@
+> **ARCHIVED — OBSOLETE.** This document describes "Song Structure Timeline v1.4.7", a
+> single-song predecessor of the current app. It does not reflect the current codebase
+> (`index.html`, now setlist.app v2.1.0+ with a multi-song Event → Songs → Song Details
+> architecture). Kept for historical reference only — see `docs/v2.1.0_feature_documentation.md`
+> and `docs/v2.1.0_tech_documentation.md` for the current documentation.
+
 # setlist.app — Song Structure Timeline v1.4.7-STABLE
 ## Feature & Technology Documentation / Agent Handoff
 
