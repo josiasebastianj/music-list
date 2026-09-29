@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
-<!-- setlist.app v2.1.0 | Visual redesign | Event → Songs → Song Details -->
+<!-- setlist.app v2.2.0 | Event sharing | Event → Songs → Song Details -->
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>setlist.app v2.1.0</title>
+<title>setlist.app v2.2.0</title>
 <style>
 :root{
   --bg:#f7f5ef; --surface:#fcfbf7; --surface-2:#f2f0e9; --text:#17202b; --muted:#6b7480;
@@ -37,6 +37,18 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 @media(max-width:900px){.app{padding:16px 12px 26px}.app-topbar{align-items:flex-start}.brand-tagline{display:none}.workspace{grid-template-columns:220px minmax(0,1fr)}.main-header,.main-content{padding-left:22px;padding-right:22px}.main-bottom{padding-left:22px;padding-right:22px}.detail-row{grid-template-columns:18px minmax(150px,210px) minmax(0,1fr) 72px}}
 @media(max-width:680px){.app{padding:12px 8px 22px}.app-topbar{padding-bottom:14px;align-items:center;gap:8px;flex-wrap:nowrap}.brand{gap:0;flex:1;min-width:0}.brand-name{font-size:24px}.brand-divider,.brand-tagline{display:none}.top-actions{width:auto;flex:0 0 auto;justify-content:flex-end;flex-wrap:nowrap;gap:5px}.top-actions .btn{display:inline-flex;padding:7px 8px;font-size:11px}.theme-top-toggle{padding:7px 8px;font-size:11px;gap:5px}.actions-trigger{padding:7px 8px;font-size:11px}.actions-panel{right:0;min-width:185px}.workspace{display:flex;flex-direction:column;min-height:0;border-radius:0 0 8px 8px}.sidebar{border-right:0;border-bottom:1px solid var(--line)}.event-block{padding:18px 16px 12px}.song-nav{padding:0 10px 12px}.song-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.song-nav-item{padding:9px 7px}.sidebar-footer{display:none}.main-header{padding:20px 16px 16px}.main-heading{grid-template-columns:20px minmax(0,1fr);align-items:start}.header-song-actions{grid-column:2;justify-content:flex-start;flex-wrap:wrap}.song-title{font-size:28px}.main-content{padding:18px 16px 22px}.detail-row{grid-template-columns:18px minmax(0,1fr) 70px;grid-template-areas:"drag name tools" "drag note note";padding:12px 0;gap:3px 8px;align-items:start}.drag{grid-area:drag;padding-top:8px}.detail-name-wrap{grid-area:name}.detail-note{grid-area:note}.detail-tools{grid-area:tools}.tag{margin-right:7px}.main-bottom{padding:14px 16px}.app-footer{padding-top:12px;flex-direction:column;gap:5px}.app-footer-meta{gap:12px}.theme-toggle{padding-right:0}}
 @media(max-width:680px){.top-actions #resetBtn{display:inline-flex!important}}
+.share-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 16px;border:1px solid var(--line);border-top:0;background:var(--accent-soft);color:var(--text);font-size:13px}.share-banner[hidden]{display:none}.share-banner.error{background:var(--danger-soft);color:var(--danger)}.share-banner a{color:var(--accent);font-weight:700;text-decoration:none;white-space:nowrap}.share-banner a:hover{text-decoration:underline}
+.toast{position:fixed;left:50%;bottom:24px;z-index:100;transform:translate(-50%,12px);padding:10px 16px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--text);box-shadow:var(--shadow);font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s ease,transform .2s ease}.toast.show{opacity:1;transform:translate(-50%,0)}
+.share-dialog{width:min(520px,calc(100vw - 32px));padding:0;border:1px solid var(--line-strong);border-radius:12px;background:var(--surface);color:var(--text);box-shadow:var(--shadow)}.share-dialog::backdrop{background:rgba(7,17,27,.45)}.share-dialog-inner{display:flex;flex-direction:column;gap:12px;padding:22px}.share-dialog-title{font-family:Georgia,"Times New Roman",serif;font-size:22px;font-weight:700}.share-dialog-copy,.share-dialog-hint{margin:0;color:var(--muted);font-size:13px;line-height:1.5}.share-dialog-hint{color:var(--danger)}.share-dialog-hint[hidden]{display:none}.share-dialog-url{width:100%;padding:9px 10px;border:1px solid var(--line-strong);border-radius:7px;background:var(--surface-2);color:var(--text);font-size:13px;outline:none}.share-dialog-url:focus{border-color:var(--accent)}.share-dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+body.view-only #shareBtn,body.view-only #actionsMenu,body.view-only #resetBtn,body.view-only #addSong{display:none!important}
+body.view-only .event-name:hover{border-bottom-color:transparent}
+.view-title{margin:0;min-width:0;font-family:Georgia,"Times New Roman",serif;font-size:32px;font-weight:700;line-height:1.2;letter-spacing:-.5px;overflow-wrap:anywhere}
+.key-badge{min-width:72px;padding:8px 10px;border:1px solid var(--line-strong);border-radius:7px;text-align:center;font-weight:700}
+body.view-only .detail-row{grid-template-columns:minmax(190px,250px) minmax(0,1fr);padding:12px 0}
+.view-detail-name{padding:6px 8px;font-weight:700;font-size:14px;overflow-wrap:anywhere}
+.view-detail-note{padding:6px 8px;color:var(--muted);font-size:14px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
+.color-dot.static{display:inline-block;cursor:default}.color-dot.static:hover{transform:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+@media(max-width:680px){#themeLabel{display:none}.view-title{font-size:28px}body.view-only .detail-row{grid-template-columns:minmax(0,1fr);grid-template-areas:"name" "note";gap:0}.view-detail-note{grid-area:note;padding-left:32px}}
 </style>
 </head>
 <body>
@@ -48,6 +60,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
       <div class="brand-tagline">Simple. Organized. Ready for Worship.</div>
     </div>
     <div class="top-actions">
+      <button class="btn" id="shareBtn" type="button" title="Copy a view-only link to this event">Share</button>
       <button class="theme-top-toggle" id="themeToggle" type="button" aria-label="Switch theme"><span class="theme-icon" id="themeIcon">☼</span><span id="themeLabel">Light Mode</span></button>
       <div class="actions-menu" id="actionsMenu">
         <button class="actions-trigger" id="actionsTrigger" type="button" aria-haspopup="true" aria-expanded="false">
@@ -62,6 +75,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
       <input id="fileInput" type="file" accept=".json,application/json" hidden>
     </div>
   </header>
+
+  <div class="share-banner" id="shareBanner" role="status" hidden></div>
 
   <div class="workspace">
     <aside class="sidebar">
@@ -87,12 +102,25 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 
   <footer class="app-footer" aria-label="Application information">
     <div class="app-footer-brand">setlist.app</div>
-    <div class="app-footer-meta"><span>Author: josiasebastianj</span><span>Version: 2.1.0</span></div>
+    <div class="app-footer-meta"><span>Author: josiasebastianj</span><span>Version: 2.2.0</span></div>
   </footer>
+  <dialog class="share-dialog" id="shareDialog" aria-labelledby="shareDialogTitle">
+    <form method="dialog" class="share-dialog-inner">
+      <div class="share-dialog-title" id="shareDialogTitle">Shareable link ready</div>
+      <p class="share-dialog-copy">Anyone with this link can view this event, its songs and song details (read-only). The link is a snapshot, so share a new link after making changes.</p>
+      <input class="share-dialog-url" id="shareUrl" type="text" readonly aria-label="Shareable link">
+      <p class="share-dialog-hint" id="shareHint" hidden>Couldn't access the clipboard. The link is selected, so press Ctrl+C (or ⌘C) to copy it.</p>
+      <div class="share-dialog-actions">
+        <button class="btn" type="submit">Close</button>
+        <button class="btn primary" id="copyShareBtn" type="button" autofocus>Copy link</button>
+      </div>
+    </form>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </div>
 <script>
 (() => {
-const APP_VERSION="2.1.0";
+const APP_VERSION="2.2.0";
 // Intentionally frozen at v2_0_0: the storage schema hasn't changed since v2.0.0, so the
 // key is NOT bumped on every release. Do not "fix" this to match APP_VERSION.
 const KEY="setlistApp_v2_0_0";
@@ -102,8 +130,11 @@ const colors=["#8fc5ff","#93dfb2","#ffd37d","#8edbe8","#f3a5c6","#f5c58a","#c5a5
 const DEFAULT_EVENT_NAME="";
 const DEFAULT_EVENT_DATE="";
 const blankState={eventName:DEFAULT_EVENT_NAME,eventDate:DEFAULT_EVENT_DATE,songs:[]};
+const SHARE_PREFIX="#share=";
+const MAX_SHARE_BYTES=1000000;
 let state=load();
 let activeSongId=state.songs[0]?.id||null;
+let viewOnly=false;
 
 function uid(prefix){return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;}
 function safeColor(value){const color=String(value||"").trim();return /^#[0-9a-fA-F]{6}$/.test(color)?color:"#8fc5ff";}
@@ -111,7 +142,13 @@ function normalizeSections(sections){return (Array.isArray(sections)?sections:[]
 function normalizeSong(song){return{id:String(song?.id||uid("song")),title:typeof song?.title==="string"?song.title:"",baseKey:typeof song?.baseKey==="string"?song.baseKey:"",sections:normalizeSections(song?.sections)};}
 function normalizeEvent(value){if(!value||typeof value!=="object")return null;if(Array.isArray(value.songs))return{eventName:typeof value.eventName==="string"?value.eventName:"",eventDate:typeof value.eventDate==="string"?value.eventDate:"",songs:value.songs.map(normalizeSong)};if(Array.isArray(value.sections)){return{eventName:typeof value.serviceTitle==="string"?value.serviceTitle:"",eventDate:typeof value.serviceDate==="string"?value.serviceDate:"",songs:[normalizeSong({title:value.title||"",baseKey:value.baseKey||"",sections:value.sections})]};}return null;}
 function load(){try{const current=localStorage.getItem(KEY);if(current){const parsed=normalizeEvent(JSON.parse(current));if(parsed)return parsed;}for(const legacyKey of LEGACY_KEYS){const raw=localStorage.getItem(legacyKey);if(!raw)continue;const migrated=normalizeEvent(JSON.parse(raw));if(migrated){try{localStorage.setItem(KEY,JSON.stringify(migrated));}catch(e){}return migrated;}}}catch(e){}return structuredClone(blankState);}
-function persist(){try{localStorage.setItem(KEY,JSON.stringify(state));return true;}catch(e){alert("Data could not be saved in the browser. Please check storage permissions or available space.");return false;}}
+function toBase64Url(bytes){let bin="";for(let i=0;i<bytes.length;i+=0x8000)bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));return btoa(bin).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");}
+function fromBase64Url(str){const b64=str.replace(/-/g,"+").replace(/_/g,"/");const bin=atob(b64+"===".slice((b64.length+3)%4));const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return bytes;}
+async function encodeShare(event){const payload={v:1,n:event.eventName||"",d:event.eventDate||"",s:event.songs.map(song=>({t:song.title,k:song.baseKey,x:song.sections.map(s=>[s.name,s.color,s.note])}))};const stream=new Blob([JSON.stringify(payload)]).stream().pipeThrough(new CompressionStream("deflate-raw"));return toBase64Url(new Uint8Array(await new Response(stream).arrayBuffer()));}
+// Share links are untrusted input: cap the inflated size so a crafted link can't exhaust memory.
+async function inflateCapped(bytes){const reader=new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw")).getReader();const chunks=[];let size=0;for(;;){const{done,value}=await reader.read();if(done)break;size+=value.length;if(size>MAX_SHARE_BYTES){await reader.cancel();throw new Error("share payload too large");}chunks.push(value);}return new Blob(chunks).text();}
+async function decodeShare(str){try{const payload=JSON.parse(await inflateCapped(fromBase64Url(str)));if(!payload||payload.v!==1||!Array.isArray(payload.s))return null;return normalizeEvent({eventName:payload.n,eventDate:payload.d,songs:payload.s.map(song=>({title:song?.t,baseKey:song?.k,sections:(Array.isArray(song?.x)?song.x:[]).map(x=>Array.isArray(x)?{name:x[0],color:x[1],note:x[2]}:null)}))});}catch(e){return null;}}
+function persist(){if(viewOnly)return true;try{localStorage.setItem(KEY,JSON.stringify(state));return true;}catch(e){alert("Data could not be saved in the browser. Please check storage permissions or available space.");return false;}}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
 function songNumber(i){return String(i+1).padStart(2,"0");}
 function getSong(id){return state.songs.find(song=>song.id===id);}
@@ -120,10 +157,10 @@ function setTheme(theme){const next=theme==="dark"?"dark":"light";document.docum
 function initTheme(){let theme="light";try{theme=localStorage.getItem(THEME_KEY)||"light";}catch(e){}setTheme(theme);}
 function render(){
   document.getElementById("eventName").value=state.eventName||"";
-  document.getElementById("eventDate").value=state.eventDate||"";
+  const eventDate=document.getElementById("eventDate");eventDate.value=state.eventDate||"";eventDate.hidden=viewOnly&&!state.eventDate;
   const list=document.getElementById("songList");list.innerHTML="";
   document.getElementById("songCount").textContent=`${state.songs.length} ${state.songs.length===1?"song":"songs"}`;
-  if(!state.songs.length){list.innerHTML='<div class="empty-nav">No songs yet.<br>Use <strong>+ Add Song</strong> to start.</div>';activeSongId=null;renderMain();return;}
+  if(!state.songs.length){list.innerHTML=viewOnly?'<div class="empty-nav">This shared event has no songs.</div>':'<div class="empty-nav">No songs yet.<br>Use <strong>+ Add Song</strong> to start.</div>';activeSongId=null;renderMain();return;}
   if(!getSong(activeSongId))activeSongId=state.songs[0].id;
   state.songs.forEach((song,index)=>{const button=document.createElement("button");button.type="button";button.className=`song-nav-item${song.id===activeSongId?" active":""}`;button.dataset.songSelect=song.id;button.setAttribute("aria-current",song.id===activeSongId?"true":"false");button.innerHTML=`<span class="song-nav-number">${songNumber(index)}</span><span class="song-nav-title">${esc(song.title.trim()||"Untitled Song")}</span><span class="song-nav-key">${esc(song.baseKey.trim()||"—")}</span><span class="song-nav-arrow">›</span>`;list.appendChild(button);});
   renderMain();
@@ -131,15 +168,18 @@ function render(){
 function renderMain(){
   const root=document.getElementById("mainArea");root.innerHTML="";
   const song=getSong(activeSongId);
-  if(!song){root.innerHTML='<div class="workspace-empty"><div class="workspace-empty-inner"><div class="workspace-empty-title">Your setlist starts here.</div><div class="workspace-empty-copy">Add a song from the sidebar to create your first Song Workspace.</div></div></div>';return;}
+  if(!song){root.innerHTML=viewOnly?'<div class="workspace-empty"><div class="workspace-empty-inner"><div class="workspace-empty-title">No songs in this setlist.</div><div class="workspace-empty-copy">The person who shared this event hasn\'t added any songs yet.</div></div></div>':'<div class="workspace-empty"><div class="workspace-empty-inner"><div class="workspace-empty-title">Your setlist starts here.</div><div class="workspace-empty-copy">Add a song from the sidebar to create your first Song Workspace.</div></div></div>';return;}
   const index=state.songs.findIndex(s=>s.id===song.id);
-  const header=document.createElement("div");header.className="main-header";header.innerHTML=`<div class="main-heading"><div class="back-mark" aria-hidden="true">‹</div><input class="song-title" data-song-title="${esc(song.id)}" value="${esc(song.title)}" placeholder="Song Title" aria-label="Song title"><div class="header-song-actions"><input class="key-input" data-song-key="${esc(song.id)}" value="${esc(song.baseKey)}" placeholder="Key" aria-label="Base key"><button class="icon-btn" data-song-up="${esc(song.id)}" type="button" title="Move song up" aria-label="Move song up" ${index===0?"disabled":""}>↑</button><button class="icon-btn" data-song-down="${esc(song.id)}" type="button" title="Move song down" aria-label="Move song down" ${index===state.songs.length-1?"disabled":""}>↓</button><button class="icon-btn danger" data-song-delete="${esc(song.id)}" type="button" title="Delete song" aria-label="Delete song">⌫</button><button class="export-btn" data-song-export="${esc(song.id)}" type="button">Export PNG</button></div></div>`;root.appendChild(header);
-  const content=document.createElement("div");content.className="main-content";content.innerHTML='<div class="section-label">SONG DETAILS</div><div class="details" data-details></div><button class="btn add-detail" data-song-add-detail="'+esc(song.id)+'" type="button">＋ Add Song Detail</button>';root.appendChild(content);
+  const header=document.createElement("div");header.className="main-header";header.innerHTML=viewOnly?viewHeader(song):`<div class="main-heading"><div class="back-mark" aria-hidden="true">‹</div><input class="song-title" data-song-title="${esc(song.id)}" value="${esc(song.title)}" placeholder="Song Title" aria-label="Song title"><div class="header-song-actions"><input class="key-input" data-song-key="${esc(song.id)}" value="${esc(song.baseKey)}" placeholder="Key" aria-label="Base key"><button class="icon-btn" data-song-up="${esc(song.id)}" type="button" title="Move song up" aria-label="Move song up" ${index===0?"disabled":""}>↑</button><button class="icon-btn" data-song-down="${esc(song.id)}" type="button" title="Move song down" aria-label="Move song down" ${index===state.songs.length-1?"disabled":""}>↓</button><button class="icon-btn danger" data-song-delete="${esc(song.id)}" type="button" title="Delete song" aria-label="Delete song">⌫</button><button class="export-btn" data-song-export="${esc(song.id)}" type="button">Export PNG</button></div></div>`;root.appendChild(header);
+  const content=document.createElement("div");content.className="main-content";content.innerHTML='<div class="section-label">SONG DETAILS</div><div class="details" data-details></div>'+(viewOnly?'':'<button class="btn add-detail" data-song-add-detail="'+esc(song.id)+'" type="button">＋ Add Song Detail</button>');root.appendChild(content);
   const details=content.querySelector("[data-details]");
-  if(!song.sections.length){details.innerHTML='<div class="empty-detail">No song details yet. Add a section to start building this song.</div>';}else song.sections.forEach((section,sectionIndex)=>renderDetail(song,section,sectionIndex,details));
+  if(!song.sections.length){details.innerHTML=`<div class="empty-detail">${viewOnly?"This song has no details yet.":"No song details yet. Add a section to start building this song."}</div>`;}else song.sections.forEach((section,sectionIndex)=>renderDetail(song,section,sectionIndex,details));
   const bottom=document.createElement("div");bottom.className="main-bottom";bottom.innerHTML=`<div class="song-position">Song ${songNumber(index)} of ${state.songs.length}</div><button class="export-btn" data-song-export="${esc(song.id)}" type="button">Export PNG</button>`;root.appendChild(bottom);
 }
+function viewHeader(song){return `<div class="main-heading"><div class="back-mark" aria-hidden="true">‹</div><h1 class="view-title">${esc(song.title.trim()||"Untitled Song")}</h1><div class="header-song-actions"><div class="key-badge" title="Base key" aria-label="Base key ${esc(song.baseKey.trim()||"not set")}">${esc(song.baseKey.trim()||"—")}</div><button class="export-btn" data-song-export="${esc(song.id)}" type="button">Export PNG</button></div></div>`;}
+function renderDetailView(section,root){const row=document.createElement("div");row.className="detail-row";row.innerHTML=`<div class="detail-name-wrap"><span class="color-dot static" style="--tag-color:${safeColor(section.color)}" aria-hidden="true"></span><div class="view-detail-name">${esc(section.name.trim()||"Untitled")}</div></div><div class="view-detail-note">${esc(section.note)}</div>`;root.appendChild(row);}
 function renderDetail(song,section,index,root){
+  if(viewOnly){renderDetailView(section,root);return;}
   const card=document.createElement("div");card.className="detail-row";const accent=safeColor(section.color);
   card.innerHTML=`<div class="drag" aria-hidden="true">⋮⋮</div><div class="detail-name-wrap"><button class="color-dot" data-detail-color="${esc(song.id)}" data-detail-index="${index}" style="--tag-color:${accent}" type="button" title="Change section color" aria-label="Change section color"></button><input class="detail-name-input" data-detail-name="${esc(song.id)}" data-detail-index="${index}" value="${esc(section.name)}" aria-label="Song detail name" placeholder="Song detail name"></div><textarea class="detail-note" data-detail-note="${esc(song.id)}" data-detail-index="${index}" rows="1" aria-label="Notes for ${esc(section.name||"song detail")}" placeholder="Add notes...">${esc(section.note)}</textarea><div class="detail-tools"><button class="icon-btn" data-detail-up="${esc(song.id)}" data-detail-index="${index}" type="button" title="Move up" aria-label="Move song detail up" ${index===0?"disabled":""}>↑</button><button class="icon-btn" data-detail-down="${esc(song.id)}" data-detail-index="${index}" type="button" title="Move down" aria-label="Move song detail down" ${index===song.sections.length-1?"disabled":""}>↓</button><button class="icon-btn danger" data-detail-delete="${esc(song.id)}" data-detail-index="${index}" type="button" title="Delete song detail" aria-label="Delete song detail">⌫</button></div>`;
   root.appendChild(card);
@@ -203,8 +243,27 @@ document.addEventListener("input",e=>{
 });
 function renderSidebarOnly(){const list=document.getElementById("songList");list.innerHTML="";state.songs.forEach((song,index)=>{const button=document.createElement("button");button.type="button";button.className=`song-nav-item${song.id===activeSongId?" active":""}`;button.dataset.songSelect=song.id;button.innerHTML=`<span class="song-nav-number">${songNumber(index)}</span><span class="song-nav-title">${esc(song.title.trim()||"Untitled Song")}</span><span class="song-nav-key">${esc(song.baseKey.trim()||"—")}</span><span class="song-nav-arrow">›</span>`;list.appendChild(button);});document.getElementById("songCount").textContent=`${state.songs.length} ${state.songs.length===1?"song":"songs"}`;}
 function updateDetailTag(input){const row=input.closest(".detail-row");const tag=row?.querySelector(".tag");if(tag)tag.textContent=input.value.trim()||"Untitled";}
+let toastTimer=null;
+function showToast(message){const toast=document.getElementById("toast");toast.textContent=message;toast.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove("show"),2200);}
+function showBanner(message,isError){const banner=document.getElementById("shareBanner");banner.classList.toggle("error",isError);banner.innerHTML=`<span>${esc(message)}</span><a href="${esc(location.pathname)}">Open my setlist</a>`;banner.hidden=false;}
+const shareDialog=document.getElementById("shareDialog"),shareUrl=document.getElementById("shareUrl"),shareHint=document.getElementById("shareHint");
+document.getElementById("shareBtn").onclick=async()=>{let url;try{url=location.origin+location.pathname+SHARE_PREFIX+await encodeShare(state);}catch(e){alert("Sharing is not supported in this browser.");return;}shareUrl.value=url;shareHint.hidden=true;shareDialog.showModal();};
+document.getElementById("copyShareBtn").onclick=async()=>{try{await navigator.clipboard.writeText(shareUrl.value);shareDialog.close();showToast("Link copied to clipboard");}catch(e){shareUrl.focus();shareUrl.select();shareHint.hidden=false;}};
+shareUrl.addEventListener("focus",()=>shareUrl.select());
+shareDialog.addEventListener("click",e=>{if(e.target===shareDialog)shareDialog.close();});
+async function initShare(){
+  if(!location.hash.startsWith(SHARE_PREFIX))return;
+  const shared=await decodeShare(location.hash.slice(SHARE_PREFIX.length));
+  if(!shared){showBanner("This share link is invalid or damaged.",true);return;}
+  state=shared;activeSongId=state.songs[0]?.id||null;viewOnly=true;
+  document.body.classList.add("view-only");
+  const eventName=document.getElementById("eventName");eventName.readOnly=true;eventName.placeholder="Untitled Event";
+  document.getElementById("eventDate").readOnly=true;
+  showBanner("Viewing a shared setlist · read-only",false);
+}
+window.addEventListener("hashchange",()=>location.reload());
 initTheme();
-render();
+initShare().finally(render);
 })();
 </script>
 
