@@ -1,179 +1,187 @@
 <!DOCTYPE html>
 <html lang="en">
-<!-- setlist.app v2.0.0 | Event → Songs → Song Details -->
+<!-- setlist.app v2.1.0 | Visual redesign | Event → Songs → Song Details -->
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>setlist.app v2.0.0</title>
+<title>setlist.app v2.1.0</title>
 <style>
 :root{
-  --bg:#05090f; --panel:#0b1420; --panel2:#0e1926; --text:#f3f6fb;
-  --muted:#9eacc0; --line:#26374c; --accent:#4da3ff; --danger:#ff5f7a;
+  --bg:#f7f5ef; --surface:#fcfbf7; --surface-2:#f2f0e9; --text:#17202b; --muted:#6b7480;
+  --line:#d8d6cf; --line-strong:#c8c5bc; --accent:#1f6feb; --accent-soft:#e9f2ff;
+  --danger:#b4233c; --danger-soft:#fff0f2; --focus:#1f6feb; --tag-text:#24313d;
+  --shadow:0 10px 28px rgba(23,32,43,.06); --radius:10px;
+}
+:root[data-theme="dark"]{
+  --bg:#07111b; --surface:#0d1823; --surface-2:#122131; --text:#f1f5f9; --muted:#9aa8b7;
+  --line:#26394d; --line-strong:#38506a; --accent:#4d8dff; --accent-soft:#142c4a;
+  --danger:#ff7086; --danger-soft:#32151e; --focus:#65a2ff; --tag-text:#f5f8fb;
+  --shadow:0 14px 34px rgba(0,0,0,.22); --radius:10px;
 }
 *{box-sizing:border-box}
-body{margin:0;background:radial-gradient(circle at 50% -10%,#102033 0,#05090f 42%,#03070c 100%);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text)}
+html{min-height:100%;background:var(--bg)}
+body{margin:0;min-height:100vh;background:var(--bg);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);transition:background .2s ease,color .2s ease}
 button,input,textarea{font:inherit}button{cursor:pointer}
-.app{max-width:1180px;margin:auto;padding:34px 22px 50px}
-.header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:28px}
-.event-name{display:block;width:min(760px,100%);margin:0 0 10px;padding:0;border:0;border-bottom:1px solid transparent;background:transparent;color:var(--text);font-size:clamp(30px,5vw,58px);font-weight:800;line-height:1;letter-spacing:-2px;outline:none}
-.event-name:hover{border-bottom-color:#26374c}.event-name:focus{border-bottom-color:var(--accent)}
-.subtitle{color:#a9c0e0;font-size:16px;margin-bottom:14px}
-.meta-grid{display:grid;grid-template-columns:minmax(180px,240px);gap:10px;max-width:760px}
-.meta-field{display:flex;flex-direction:column;gap:5px}.meta-field label{font-size:10px;letter-spacing:1px;color:#7fa7d6;font-weight:800}.meta-field input{width:100%;padding:9px 10px;border:1px solid #26374c;border-radius:8px;background:#08111b;color:var(--text);outline:none}.meta-field input:focus{border-color:var(--accent)}
-.toolbar{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:#0d1826;color:var(--text);border-radius:10px;padding:10px 14px}.btn:hover{border-color:#58708f;background:#122033}.btn.primary{border-color:#2d83df;background:#10335a}.btn.danger{border-color:#713044;color:#ff9db0}
-.section-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:22px 0 10px}.section-title{font-size:14px;letter-spacing:1.4px;font-weight:800;color:#9fb5d6}.songs{display:flex;flex-direction:column;gap:12px}
-.song-card{border:1px solid var(--line);border-radius:14px;background:linear-gradient(90deg,#0b1521,#09121c);overflow:hidden;min-width:0}.song-header{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:14px;align-items:center;padding:14px 16px}.song-number{font-size:12px;font-weight:900;color:#7fa7d6;min-width:28px}.song-main{min-width:0}.song-title{display:block;width:100%;padding:0;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--text);font-size:24px;font-weight:800;line-height:1.2;outline:none}.song-title:hover{border-color:#26374c;background:#08111b;padding:4px 6px;margin:-4px -6px}.song-title:focus{border-color:var(--accent);background:#08111b;padding:4px 6px;margin:-4px -6px}.song-key{display:flex;align-items:center;gap:7px;margin-top:5px}.song-key label{font-size:10px;letter-spacing:1px;color:#7fa7d6;font-weight:800}.song-key input{width:90px;padding:5px 7px;border:1px solid #26374c;border-radius:7px;background:#08111b;color:var(--text);outline:none}.song-key input:focus{border-color:var(--accent)}
-.song-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end}.icon-btn{width:32px;height:32px;padding:0;border-radius:8px;border:1px solid #2d4968;background:#0d1b2b;color:#b9d5f5;font-size:16px;line-height:1}.icon-btn:hover:not(:disabled){border-color:var(--accent);background:#122a43}.icon-btn:disabled{opacity:.28;cursor:default}.icon-btn.danger{border-color:#713044;background:#24101a;color:#ff9db0}.icon-btn.export{width:auto;padding:0 10px;font-size:13px;font-weight:700}
-.song-body{border-top:1px solid #25364b;padding:0 16px 16px}.song-body[hidden]{display:none}.song-details-title{font-size:12px;letter-spacing:1.2px;font-weight:800;color:#9fb5d6;margin:16px 0 10px}.details{display:flex;flex-direction:column;gap:10px}.detail-card{display:grid;grid-template-columns:7px 250px minmax(0,1fr) 44px;gap:0;border:1px solid var(--line);border-radius:12px;background:linear-gradient(90deg,#0b1521,#09121c);overflow:hidden;min-width:0;align-items:stretch}.detail-accent{width:7px;background:var(--accent);grid-column:1;grid-row:1}.detail-main{grid-column:2;padding:16px 18px;display:flex;align-items:center;gap:10px;min-width:0;border-right:1px solid #25364b}.dot{width:13px;height:13px;border-radius:50%;background:var(--accent);flex:0 0 auto}.detail-name-input{width:100%;min-width:0;padding:0;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--text);font-weight:800;font-size:22px;line-height:1.2;outline:none}.detail-name-input:hover{border-color:#26374c;background:#08111b;padding:4px 6px;margin:-4px -6px}.detail-name-input:focus{border-color:var(--accent);background:#08111b;padding:4px 6px;margin:-4px -6px}.note{grid-column:3;padding:16px 20px;min-width:0;display:flex;align-items:center}.note-input{width:100%;min-height:0;resize:vertical;background:transparent;border:1px solid transparent;color:#dce7f5;border-radius:8px;padding:0;line-height:1.4;font-size:18px;font-weight:500}.note-input:hover{border-color:#26374c;background:#08111b;padding:3px 5px;margin:-3px -5px}.note-input:focus{border-color:var(--accent);background:#08111b;outline:none;padding:3px 5px;margin:-3px -5px}.detail-tools{grid-column:4;grid-row:1;display:flex;align-items:center;justify-content:center;border-left:1px solid #25364b;flex-direction:column;gap:5px;padding:6px}.add-detail{margin-top:12px}.empty{color:var(--muted);font-size:13px;padding:18px;border:1px dashed #2b3d52;border-radius:12px}.songs-empty{padding:28px 18px;text-align:center}.songs-empty strong{display:block;color:#dce7f5;margin-bottom:5px}
-@media(max-width:850px){.header{flex-direction:column}.song-header{grid-template-columns:auto minmax(0,1fr) auto}.song-actions{grid-column:2 / span 2;justify-content:flex-start}.detail-card{grid-template-columns:7px 1fr 42px}.detail-accent{grid-column:1;grid-row:1 / span 3}.detail-main{grid-column:2;grid-row:1;padding:14px 14px;border-right:0}.note{grid-column:2;grid-row:2;padding:0 14px 16px;border-left:0;border-top:1px solid #25364b}.note-input{font-size:17px;padding-top:14px}.detail-tools{grid-column:3;grid-row:1 / span 2}.toolbar{width:100%}}
-
-    .app-footer {
-      margin-top: 28px;
-      padding: 14px 0 4px;
-      border-top: 1px solid #e5e7eb;
-      color: #6b7280;
-      font-size: 12px;
-      text-align: center;
-      line-height: 1.6;
-    }
-
-  </style>
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.app{max-width:1320px;margin:auto;padding:26px 24px 34px;min-height:100vh;display:flex;flex-direction:column}
+.app-topbar{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:2px 2px 24px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:18px;min-width:0}.brand-name{font-family:Georgia,"Times New Roman",serif;font-size:28px;font-weight:700;letter-spacing:-.8px;white-space:nowrap}.brand-divider{width:1px;height:24px;background:var(--line-strong)}.brand-tagline{color:var(--muted);font-size:12px;white-space:nowrap}
+.top-actions{display:flex;align-items:center;gap:8px}.theme-top-toggle{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line-strong);background:var(--surface);color:var(--text);border-radius:7px;padding:9px 11px;font-size:13px;white-space:nowrap}.theme-top-toggle:hover{background:var(--surface-2);border-color:var(--line-strong)}.theme-top-toggle .theme-icon{width:auto}.actions-menu{position:relative}.actions-trigger{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line-strong);background:var(--surface);color:var(--text);border-radius:7px;padding:9px 12px;font-size:13px}.actions-trigger:hover,.actions-menu.open .actions-trigger{background:var(--surface-2);border-color:var(--line-strong)}.actions-chevron{font-size:12px;color:var(--muted);transition:transform .15s ease}.actions-menu.open .actions-chevron{transform:rotate(180deg)}.actions-panel{position:absolute;top:calc(100% + 7px);right:0;z-index:50;min-width:190px;padding:6px;background:var(--surface);border:1px solid var(--line-strong);border-radius:9px;box-shadow:var(--shadow);display:none}.actions-menu.open .actions-panel{display:flex;flex-direction:column;gap:2px}.action-item{display:flex;align-items:center;gap:9px;width:100%;padding:9px 10px;border:0;border-radius:6px;background:transparent;color:var(--text);text-align:left;font-size:13px}.action-item:hover{background:var(--surface-2)}.action-item .theme-icon{width:17px;text-align:center;font-size:15px}.action-divider{height:1px;background:var(--line);margin:4px 2px}.action-label{flex:1}.action-value{color:var(--muted);font-size:11px}.btn{border:1px solid var(--line-strong);background:var(--surface);color:var(--text);border-radius:7px;padding:9px 13px;font-size:13px}.btn:hover{background:var(--surface-2);border-color:var(--line-strong)}.btn.primary{background:var(--text);border-color:var(--text);color:var(--bg);font-weight:700}.btn.primary:hover{opacity:.9}.btn.danger{color:var(--danger);border-color:var(--line);background:transparent}.btn.compact{padding:8px 10px}
+.theme-toggle{display:flex;align-items:center;gap:9px;width:100%;border:0;background:transparent;color:var(--text);padding:9px 10px;font-size:13px;text-align:left}.theme-toggle:hover{background:var(--surface-2);border-radius:6px}.theme-icon{font-size:15px}
+.workspace{display:grid;grid-template-columns:280px minmax(0,1fr);flex:1;min-height:650px;border:1px solid var(--line);border-top:0;border-radius:0 0 10px 10px;overflow:hidden;background:var(--surface);box-shadow:var(--shadow)}
+.sidebar{display:flex;flex-direction:column;border-right:1px solid var(--line);background:var(--surface);min-width:0}.event-block{padding:28px 22px 20px}.eyebrow{font-size:10px;letter-spacing:1.2px;font-weight:800;color:var(--muted);margin-bottom:9px}.event-name{display:block;width:100%;padding:0 0 6px;border:0;border-bottom:1px solid transparent;background:transparent;color:var(--text);font-family:Georgia,"Times New Roman",serif;font-size:22px;font-weight:700;line-height:1.2;outline:none}.event-name:hover{border-bottom-color:var(--line-strong)}.event-name:focus{border-bottom-color:var(--accent)}.event-date{width:100%;padding:5px 0;border:0;background:transparent;color:var(--muted);font-size:13px;outline:none}.event-date:focus{color:var(--text)}
+.song-nav{padding:0 14px 18px;flex:1;min-height:0}.nav-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 8px 10px}.nav-heading-title{font-size:11px;letter-spacing:1.2px;font-weight:800;color:var(--muted)}.song-list{display:flex;flex-direction:column;gap:3px}.song-nav-item{display:grid;grid-template-columns:28px minmax(0,1fr) 24px 16px;align-items:center;gap:8px;width:100%;padding:10px 8px;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--text);text-align:left}.song-nav-item:hover{background:var(--surface-2)}.song-nav-item.active{background:var(--accent-soft);border-color:var(--line);box-shadow:inset 3px 0 0 var(--accent)}.song-nav-number{font-size:11px;color:var(--muted);font-weight:800}.song-nav-item.active .song-nav-number{color:var(--accent)}.song-nav-title{font-size:13px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.song-nav-key{font-size:12px;color:var(--muted);text-align:right}.song-nav-arrow{font-size:16px;color:var(--muted);text-align:right}.sidebar-footer{padding:16px 22px;border-top:1px solid var(--line);color:var(--muted);font-size:11px;line-height:1.7}
+.main{min-width:0;background:var(--surface);display:flex;flex-direction:column}.main-header{padding:30px 34px 22px;border-bottom:1px solid var(--line)}.main-heading{display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:12px}.back-mark{color:var(--muted);font-size:22px;line-height:1}.song-title{display:block;width:100%;padding:0;border:1px solid transparent;border-radius:5px;background:transparent;color:var(--text);font-family:Georgia,"Times New Roman",serif;font-size:32px;font-weight:700;line-height:1.2;outline:none;letter-spacing:-.5px}.song-title:hover{border-color:var(--line);padding:3px 5px;margin:-3px -5px}.song-title:focus{border-color:var(--accent);padding:3px 5px;margin:-3px -5px}.header-song-actions{display:flex;align-items:center;gap:6px}.key-input{width:72px;padding:8px 10px;border:1px solid var(--line-strong);border-radius:7px;background:var(--surface);color:var(--text);text-align:center;outline:none}.key-input:focus{border-color:var(--accent)}.icon-btn{width:32px;height:32px;padding:0;border-radius:7px;border:1px solid var(--line);background:transparent;color:var(--text);font-size:15px;line-height:1}.icon-btn:hover:not(:disabled){background:var(--surface-2);border-color:var(--line-strong)}.icon-btn:disabled{opacity:.3;cursor:default}.icon-btn.danger{color:var(--danger)}.export-btn{border:1px solid var(--line-strong);background:var(--surface);color:var(--text);border-radius:7px;padding:8px 11px;font-size:12px;font-weight:700}
+.main-content{padding:26px 34px 34px;flex:1}.section-label{font-size:11px;letter-spacing:1.2px;font-weight:800;color:var(--muted);padding-bottom:12px;border-bottom:1px solid var(--line)}.details{display:flex;flex-direction:column}.detail-row{display:grid;grid-template-columns:22px minmax(190px,250px) minmax(0,1fr) 76px;align-items:center;min-height:72px;border-bottom:1px solid var(--line);gap:12px}.drag{color:var(--muted);font-size:15px;letter-spacing:-2px;user-select:none}.detail-name-wrap{display:flex;align-items:center;min-width:0}.detail-name-input{width:100%;padding:6px 8px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--text);font-weight:700;font-size:14px;outline:none}.detail-name-input:hover{border-color:var(--line);background:var(--surface-2)}.detail-name-input:focus{border-color:var(--accent);background:var(--surface)}.detail-note{width:100%;padding:6px 8px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--muted);font-size:14px;line-height:1.45;resize:none;min-height:38px;outline:none}.detail-note:hover{border-color:var(--line);background:var(--surface-2)}.detail-note:focus{border-color:var(--accent);background:var(--surface);color:var(--text)}.detail-tools{display:flex;justify-content:flex-end;gap:3px}.detail-tools .icon-btn{width:30px;height:30px}.color-dot{width:14px;height:14px;flex:0 0 14px;border:0;border-radius:50%;background:var(--tag-color);padding:0;margin:0 8px 0 2px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);cursor:pointer}.color-dot:hover{transform:scale(1.08);box-shadow:0 0 0 2px var(--line)}.add-detail{margin-top:14px}.empty-detail{padding:18px 8px;color:var(--muted);font-size:13px}.workspace-empty{height:100%;min-height:420px;display:flex;align-items:center;justify-content:center;text-align:center;padding:40px}.workspace-empty-inner{max-width:420px}.workspace-empty-title{font-family:Georgia,"Times New Roman",serif;font-size:28px;font-weight:700;margin-bottom:8px}.workspace-empty-copy{color:var(--muted);font-size:14px;line-height:1.6}.empty-nav{padding:16px 8px;color:var(--muted);font-size:12px;line-height:1.5}.main-bottom{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:20px 34px;border-top:1px solid var(--line)}.song-position{font-size:11px;color:var(--muted)}
+.app-footer{max-width:1320px;width:100%;margin:0 auto;padding:18px 2px 0;color:var(--muted);font-size:11px;line-height:1.6;display:flex;justify-content:space-between;gap:20px}.app-footer-brand{font-family:Georgia,"Times New Roman",serif;color:var(--text);font-weight:700;font-size:15px}.app-footer-meta{display:flex;gap:16px}
+@media(max-width:900px){.app{padding:16px 12px 26px}.app-topbar{align-items:flex-start}.brand-tagline{display:none}.workspace{grid-template-columns:220px minmax(0,1fr)}.main-header,.main-content{padding-left:22px;padding-right:22px}.main-bottom{padding-left:22px;padding-right:22px}.detail-row{grid-template-columns:18px minmax(150px,210px) minmax(0,1fr) 72px}}
+@media(max-width:680px){.app{padding:12px 8px 22px}.app-topbar{padding-bottom:14px;align-items:center;gap:8px;flex-wrap:nowrap}.brand{gap:0;flex:1;min-width:0}.brand-name{font-size:24px}.brand-divider,.brand-tagline{display:none}.top-actions{width:auto;flex:0 0 auto;justify-content:flex-end;flex-wrap:nowrap;gap:5px}.top-actions .btn{display:inline-flex;padding:7px 8px;font-size:11px}.theme-top-toggle{padding:7px 8px;font-size:11px;gap:5px}.actions-trigger{padding:7px 8px;font-size:11px}.actions-panel{right:0;min-width:185px}.workspace{display:flex;flex-direction:column;min-height:0;border-radius:0 0 8px 8px}.sidebar{border-right:0;border-bottom:1px solid var(--line)}.event-block{padding:18px 16px 12px}.song-nav{padding:0 10px 12px}.song-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.song-nav-item{padding:9px 7px}.sidebar-footer{display:none}.main-header{padding:20px 16px 16px}.main-heading{grid-template-columns:20px minmax(0,1fr);align-items:start}.header-song-actions{grid-column:2;justify-content:flex-start;flex-wrap:wrap}.song-title{font-size:28px}.main-content{padding:18px 16px 22px}.detail-row{grid-template-columns:18px minmax(0,1fr) 70px;grid-template-areas:"drag name tools" "drag note note";padding:12px 0;gap:3px 8px;align-items:start}.drag{grid-area:drag;padding-top:8px}.detail-name-wrap{grid-area:name}.detail-note{grid-area:note}.detail-tools{grid-area:tools}.tag{margin-right:7px}.main-bottom{padding:14px 16px}.app-footer{padding-top:12px;flex-direction:column;gap:5px}.app-footer-meta{gap:12px}.theme-toggle{padding-right:0}}
+@media(max-width:680px){.top-actions #resetBtn{display:inline-flex!important}}
+</style>
 </head>
 <body>
 <div class="app">
-  <header class="header">
-    <div class="title-area">
-      <input id="eventName" class="event-name" value="" aria-label="Event name" placeholder="Event Name">
-      <div class="subtitle">Setlist</div>
-      <div class="meta-grid">
-        <div class="meta-field"><label for="eventDate">EVENT DATE</label><input id="eventDate" type="date" aria-label="Event date"></div>
-      </div>
+  <header class="app-topbar">
+    <div class="brand">
+      <div class="brand-name">setlist.app</div>
+      <div class="brand-divider"></div>
+      <div class="brand-tagline">Simple. Organized. Ready for Worship.</div>
     </div>
-    <div class="toolbar">
-      <button class="btn" id="exportBtn" type="button">Export JSON</button>
-      <button class="btn" id="importBtn" type="button">Import JSON</button>
+    <div class="top-actions">
+      <button class="theme-top-toggle" id="themeToggle" type="button" aria-label="Switch theme"><span class="theme-icon" id="themeIcon">☼</span><span id="themeLabel">Light Mode</span></button>
+      <div class="actions-menu" id="actionsMenu">
+        <button class="actions-trigger" id="actionsTrigger" type="button" aria-haspopup="true" aria-expanded="false">
+          <span>Actions</span><span class="actions-chevron" aria-hidden="true">⌄</span>
+        </button>
+        <div class="actions-panel" id="actionsPanel" role="menu" aria-label="Application actions">
+          <button class="action-item" id="exportBtn" type="button" role="menuitem"><span aria-hidden="true">↓</span><span class="action-label">Export JSON</span></button>
+          <button class="action-item" id="importBtn" type="button" role="menuitem"><span aria-hidden="true">↑</span><span class="action-label">Import JSON</span></button>
+        </div>
+      </div>
       <button class="btn danger" id="resetBtn" type="button">Reset</button>
       <input id="fileInput" type="file" accept=".json,application/json" hidden>
     </div>
   </header>
 
-  <div class="section-heading">
-    <div class="section-title">SONGS</div>
-    <button class="btn primary" id="addSong" type="button">＋ Add Song</button>
+  <div class="workspace">
+    <aside class="sidebar">
+      <div class="event-block">
+        <div class="eyebrow">EVENT</div>
+        <input id="eventName" class="event-name" value="" aria-label="Event name" placeholder="Event Name">
+        <input id="eventDate" class="event-date" type="date" aria-label="Event date">
+      </div>
+      <nav class="song-nav" aria-label="Songs">
+        <div class="nav-heading">
+          <div class="nav-heading-title">SONGS</div>
+          <button class="btn primary compact" id="addSong" type="button">＋ Add Song</button>
+        </div>
+        <div class="song-list" id="songList"></div>
+      </nav>
+      <div class="sidebar-footer">
+        <div id="songCount">0 songs</div>
+      </div>
+    </aside>
+
+    <main class="main" id="mainArea"></main>
   </div>
-  <div class="songs" id="songs"></div>
+
+  <footer class="app-footer" aria-label="Application information">
+    <div class="app-footer-brand">setlist.app</div>
+    <div class="app-footer-meta"><span>Author: josiasebastianj</span><span>Version: 2.1.0</span></div>
+  </footer>
 </div>
 <script>
 (() => {
-const APP_VERSION="2.0.0";
+const APP_VERSION="2.1.0";
 const KEY="setlistApp_v2_0_0";
+const THEME_KEY="setlistApp_theme";
 const LEGACY_KEYS=["songStructureTimeline_v1_4_2","songStructureTimeline_v1_4_1","songStructureTimeline_v1_3_0"];
-const colors=["#3182f6","#18d47b","#ff9b2f","#14cbe6","#ef4e9b","#ffad32","#9747ff","#8b5cf6","#22c55e"];
+const colors=["#8fc5ff","#93dfb2","#ffd37d","#8edbe8","#f3a5c6","#f5c58a","#c5a5f5","#b6a9f5","#9cdda9"];
 const DEFAULT_EVENT_NAME="";
 const DEFAULT_EVENT_DATE="";
 const blankState={eventName:DEFAULT_EVENT_NAME,eventDate:DEFAULT_EVENT_DATE,songs:[]};
 let state=load();
-const expandedSongs=new Set(state.songs.map(song=>song.id));
+let activeSongId=state.songs[0]?.id||null;
 
 function uid(prefix){return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;}
-function safeColor(value){const color=String(value||"").trim();return /^#[0-9a-fA-F]{6}$/.test(color)?color:"#3182f6";}
+function safeColor(value){const color=String(value||"").trim();return /^#[0-9a-fA-F]{6}$/.test(color)?color:"#8fc5ff";}
 function normalizeSections(sections){return (Array.isArray(sections)?sections:[]).map((s,i)=>({id:String(s?.id||uid("section")),name:String(s?.name??"").trim(),color:safeColor(s?.color||colors[i%colors.length]),note:String(s?.note??"")}));}
-function normalizeSong(song,index){return{id:String(song?.id||uid("song")),title:typeof song?.title==="string"?song.title:"",baseKey:typeof song?.baseKey==="string"?song.baseKey:"",sections:normalizeSections(song?.sections)};}
-function normalizeEvent(value){if(!value||typeof value!=="object")return null; if(Array.isArray(value.songs))return{eventName:typeof value.eventName==="string"?value.eventName:"",eventDate:typeof value.eventDate==="string"?value.eventDate:"",songs:value.songs.map(normalizeSong)}; if(Array.isArray(value.sections)){return{eventName:typeof value.serviceTitle==="string"?value.serviceTitle:"",eventDate:typeof value.serviceDate==="string"?value.serviceDate:"",songs:[normalizeSong({title:value.title||"",baseKey:value.baseKey||"",sections:value.sections},0)]};} return null;}
-function load(){
-  try{
-    const current=localStorage.getItem(KEY); if(current){const parsed=normalizeEvent(JSON.parse(current));if(parsed)return parsed;}
-    for(const legacyKey of LEGACY_KEYS){const raw=localStorage.getItem(legacyKey);if(!raw)continue;const migrated=normalizeEvent(JSON.parse(raw));if(migrated){try{localStorage.setItem(KEY,JSON.stringify(migrated));}catch(e){}return migrated;}}
-  }catch(e){}
-  return structuredClone(blankState);
-}
+function normalizeSong(song){return{id:String(song?.id||uid("song")),title:typeof song?.title==="string"?song.title:"",baseKey:typeof song?.baseKey==="string"?song.baseKey:"",sections:normalizeSections(song?.sections)};}
+function normalizeEvent(value){if(!value||typeof value!=="object")return null;if(Array.isArray(value.songs))return{eventName:typeof value.eventName==="string"?value.eventName:"",eventDate:typeof value.eventDate==="string"?value.eventDate:"",songs:value.songs.map(normalizeSong)};if(Array.isArray(value.sections)){return{eventName:typeof value.serviceTitle==="string"?value.serviceTitle:"",eventDate:typeof value.serviceDate==="string"?value.serviceDate:"",songs:[normalizeSong({title:value.title||"",baseKey:value.baseKey||"",sections:value.sections})]};}return null;}
+function load(){try{const current=localStorage.getItem(KEY);if(current){const parsed=normalizeEvent(JSON.parse(current));if(parsed)return parsed;}for(const legacyKey of LEGACY_KEYS){const raw=localStorage.getItem(legacyKey);if(!raw)continue;const migrated=normalizeEvent(JSON.parse(raw));if(migrated){try{localStorage.setItem(KEY,JSON.stringify(migrated));}catch(e){}return migrated;}}}catch(e){}return structuredClone(blankState);}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(state));return true;}catch(e){alert("Data could not be saved in the browser. Please check storage permissions or available space.");return false;}}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
 function songNumber(i){return String(i+1).padStart(2,"0");}
+function getSong(id){return state.songs.find(song=>song.id===id);}
+function getTheme(){return document.documentElement.dataset.theme||"light";}
+function setTheme(theme){const next=theme==="dark"?"dark":"light";document.documentElement.dataset.theme=next;try{localStorage.setItem(THEME_KEY,next);}catch(e){}const icon=document.getElementById("themeIcon"),label=document.getElementById("themeLabel");if(icon)icon.textContent=next==="dark"?"☾":"☼";if(label)label.textContent=next==="dark"?"Dark Mode":"Light Mode";}
+function initTheme(){let theme="light";try{theme=localStorage.getItem(THEME_KEY)||"light";}catch(e){}setTheme(theme);}
 function render(){
   document.getElementById("eventName").value=state.eventName||"";
   document.getElementById("eventDate").value=state.eventDate||"";
-  const root=document.getElementById("songs");root.innerHTML="";
-  if(!state.songs.length){
-    root.innerHTML='<div class="empty songs-empty"><strong>No songs yet.</strong>Add a song to start building this event.</div>';return;
-  }
-  state.songs.forEach((song,index)=>renderSong(song,index,root));
+  const list=document.getElementById("songList");list.innerHTML="";
+  document.getElementById("songCount").textContent=`${state.songs.length} ${state.songs.length===1?"song":"songs"}`;
+  if(!state.songs.length){list.innerHTML='<div class="empty-nav">No songs yet.<br>Use <strong>+ Add Song</strong> to start.</div>';activeSongId=null;renderMain();return;}
+  if(!getSong(activeSongId))activeSongId=state.songs[0].id;
+  state.songs.forEach((song,index)=>{const button=document.createElement("button");button.type="button";button.className=`song-nav-item${song.id===activeSongId?" active":""}`;button.dataset.songSelect=song.id;button.setAttribute("aria-current",song.id===activeSongId?"true":"false");button.innerHTML=`<span class="song-nav-number">${songNumber(index)}</span><span class="song-nav-title">${esc(song.title.trim()||"Untitled Song")}</span><span class="song-nav-key">${esc(song.baseKey.trim()||"—")}</span><span class="song-nav-arrow">›</span>`;list.appendChild(button);});
+  renderMain();
 }
-function renderSong(song,index,root){
-  const card=document.createElement("section");card.className="song-card";card.dataset.songId=song.id;
-  const expanded=expandedSongs.has(song.id);
-  card.innerHTML=`<div class="song-header">
-    <div class="song-number">${songNumber(index)}</div>
-    <div class="song-main">
-      <input class="song-title" data-song-title="${esc(song.id)}" value="${esc(song.title)}" placeholder="Song Title" aria-label="Song title ${songNumber(index)}">
-      <div class="song-key"><label>BASE KEY</label><input data-song-key="${esc(song.id)}" value="${esc(song.baseKey)}" placeholder="Example: G" aria-label="Base key for ${esc(song.title||`Song ${index+1}`)}"></div>
-    </div>
-    <div class="song-actions">
-      <button class="icon-btn" data-song-up="${esc(song.id)}" type="button" title="Move song up" aria-label="Move song up" ${index===0?"disabled":""}>↑</button>
-      <button class="icon-btn" data-song-down="${esc(song.id)}" type="button" title="Move song down" aria-label="Move song down" ${index===state.songs.length-1?"disabled":""}>↓</button>
-      <button class="icon-btn export" data-song-export="${esc(song.id)}" type="button" title="Export this song as PNG">Export</button>
-      <button class="icon-btn" data-song-toggle="${esc(song.id)}" type="button" title="${expanded?"Collapse":"Expand"} song" aria-expanded="${expanded}">${expanded?"⌃":"⌄"}</button>
-      <button class="icon-btn danger" data-song-delete="${esc(song.id)}" type="button" title="Delete song" aria-label="Delete song">🗑</button>
-    </div>
-  </div>
-  <div class="song-body" ${expanded?"":"hidden"}>
-    <div class="song-details-title">SONG DETAILS</div>
-    <div class="details" data-details="${esc(song.id)}"></div>
-  </div>`;
-  root.appendChild(card);
-  const details=card.querySelector("[data-details]");
-  if(!song.sections.length){details.innerHTML='<div class="empty">No song details yet.</div>';}
-  else song.sections.forEach((section,sectionIndex)=>renderDetail(song,section,sectionIndex,details));
-  const add=document.createElement("button");add.className="btn primary add-detail";add.type="button";add.dataset.songAddDetail=song.id;add.textContent="＋ Add Song Detail";details.appendChild(add);
+function renderMain(){
+  const root=document.getElementById("mainArea");root.innerHTML="";
+  const song=getSong(activeSongId);
+  if(!song){root.innerHTML='<div class="workspace-empty"><div class="workspace-empty-inner"><div class="workspace-empty-title">Your setlist starts here.</div><div class="workspace-empty-copy">Add a song from the sidebar to create your first Song Workspace.</div></div></div>';return;}
+  const index=state.songs.findIndex(s=>s.id===song.id);
+  const header=document.createElement("div");header.className="main-header";header.innerHTML=`<div class="main-heading"><div class="back-mark" aria-hidden="true">‹</div><input class="song-title" data-song-title="${esc(song.id)}" value="${esc(song.title)}" placeholder="Song Title" aria-label="Song title"><div class="header-song-actions"><input class="key-input" data-song-key="${esc(song.id)}" value="${esc(song.baseKey)}" placeholder="Key" aria-label="Base key"><button class="icon-btn" data-song-up="${esc(song.id)}" type="button" title="Move song up" aria-label="Move song up" ${index===0?"disabled":""}>↑</button><button class="icon-btn" data-song-down="${esc(song.id)}" type="button" title="Move song down" aria-label="Move song down" ${index===state.songs.length-1?"disabled":""}>↓</button><button class="icon-btn danger" data-song-delete="${esc(song.id)}" type="button" title="Delete song" aria-label="Delete song">⌫</button><button class="export-btn" data-song-export="${esc(song.id)}" type="button">Export PNG</button></div></div>`;root.appendChild(header);
+  const content=document.createElement("div");content.className="main-content";content.innerHTML='<div class="section-label">SONG DETAILS</div><div class="details" data-details></div><button class="btn add-detail" data-song-add-detail="'+esc(song.id)+'" type="button">＋ Add Song Detail</button>';root.appendChild(content);
+  const details=content.querySelector("[data-details]");
+  if(!song.sections.length){details.innerHTML='<div class="empty-detail">No song details yet. Add a section to start building this song.</div>';}else song.sections.forEach((section,sectionIndex)=>renderDetail(song,section,sectionIndex,details));
+  const bottom=document.createElement("div");bottom.className="main-bottom";bottom.innerHTML=`<div class="song-position">Song ${songNumber(index)} of ${state.songs.length}</div><button class="export-btn" data-song-export="${esc(song.id)}" type="button">Export PNG</button>`;root.appendChild(bottom);
 }
 function renderDetail(song,section,index,root){
-  const card=document.createElement("div");card.className="detail-card";const accent=safeColor(section.color);card.style.borderColor=accent+"55";
-  card.innerHTML=`<div class="detail-accent" style="background:${accent}"></div>
-    <div class="detail-main"><span class="dot" style="background:${accent}"></span><input class="detail-name-input" data-detail-name="${esc(song.id)}" data-detail-index="${index}" value="${esc(section.name)}" aria-label="Song detail name" placeholder="Song detail name"></div>
-    <div class="note"><textarea class="note-input" data-detail-note="${esc(song.id)}" data-detail-index="${index}" aria-label="Notes for ${esc(section.name||"song detail")}" placeholder="Add notes...">${esc(section.note)}</textarea></div>
-    <div class="detail-tools"><button class="icon-btn" data-detail-up="${esc(song.id)}" data-detail-index="${index}" type="button" title="Move up" ${index===0?"disabled":""}>↑</button><button class="icon-btn danger" data-detail-delete="${esc(song.id)}" data-detail-index="${index}" type="button" title="Delete song detail">🗑</button><button class="icon-btn" data-detail-down="${esc(song.id)}" data-detail-index="${index}" type="button" title="Move down" ${index===song.sections.length-1?"disabled":""}>↓</button></div>`;
+  const card=document.createElement("div");card.className="detail-row";const accent=safeColor(section.color);
+  card.innerHTML=`<div class="drag" aria-hidden="true">⋮⋮</div><div class="detail-name-wrap"><button class="color-dot" data-detail-color="${esc(song.id)}" data-detail-index="${index}" style="--tag-color:${accent}" type="button" title="Change section color" aria-label="Change section color"></button><input class="detail-name-input" data-detail-name="${esc(song.id)}" data-detail-index="${index}" value="${esc(section.name)}" aria-label="Song detail name" placeholder="Song detail name"></div><textarea class="detail-note" data-detail-note="${esc(song.id)}" data-detail-index="${index}" rows="1" aria-label="Notes for ${esc(section.name||"song detail")}" placeholder="Add notes...">${esc(section.note)}</textarea><div class="detail-tools"><button class="icon-btn" data-detail-up="${esc(song.id)}" data-detail-index="${index}" type="button" title="Move up" aria-label="Move song detail up" ${index===0?"disabled":""}>↑</button><button class="icon-btn" data-detail-down="${esc(song.id)}" data-detail-index="${index}" type="button" title="Move down" aria-label="Move song detail down" ${index===song.sections.length-1?"disabled":""}>↓</button><button class="icon-btn danger" data-detail-delete="${esc(song.id)}" data-detail-index="${index}" type="button" title="Delete song detail" aria-label="Delete song detail">⌫</button></div>`;
   root.appendChild(card);
 }
-function getSong(id){return state.songs.find(song=>song.id===id);}
-function addSong(){
-  const song={id:uid("song"),title:"",baseKey:"",sections:[]};state.songs.push(song);expandedSongs.add(song.id);if(persist())render();requestAnimationFrame(()=>{const el=document.querySelector(`[data-song-title="${CSS.escape(song.id)}"]`);if(el){el.focus();el.select();}});
-}
-function deleteSong(id){const index=state.songs.findIndex(song=>song.id===id);if(index<0)return;const song=state.songs[index];const label=song.title.trim()||`Song ${index+1}`;if(!confirm(`Delete "${label}" and all of its song details?`))return;const previous=state.songs;state.songs=state.songs.filter(song=>song.id!==id);expandedSongs.delete(id);if(!persist()){state.songs=previous;return;}render();}
-function moveSong(id,direction){const index=state.songs.findIndex(song=>song.id===id);const target=index+direction;if(index<0||target<0||target>=state.songs.length)return;[state.songs[index],state.songs[target]]=[state.songs[target],state.songs[index]];persist();render();}
+function addSong(){const song={id:uid("song"),title:"",baseKey:"",sections:[]};state.songs.push(song);activeSongId=song.id;if(persist())render();requestAnimationFrame(()=>{const el=document.querySelector(`[data-song-title="${CSS.escape(song.id)}"]`);if(el){el.focus();el.select();}});}
+function deleteSong(id){const index=state.songs.findIndex(song=>song.id===id);if(index<0)return;const song=state.songs[index];const label=song.title.trim()||`Song ${index+1}`;if(!confirm(`Delete "${label}" and all of its song details?`))return;const previous=state.songs;state.songs=state.songs.filter(song=>song.id!==id);if(activeSongId===id){const next=state.songs[index]||state.songs[index-1]||null;activeSongId=next?.id||null;}if(!persist()){state.songs=previous;activeSongId=id;return;}render();}
+function moveSong(id,direction){const index=state.songs.findIndex(song=>song.id===id),target=index+direction;if(index<0||target<0||target>=state.songs.length)return;[state.songs[index],state.songs[target]]=[state.songs[target],state.songs[index]];if(!persist()){[state.songs[index],state.songs[target]]=[state.songs[target],state.songs[index]];return;}render();}
 function addDetail(songId){const song=getSong(songId);if(!song)return;const index=song.sections.length;song.sections.push({id:uid("section"),name:"",color:colors[index%colors.length],note:""});if(persist())render();requestAnimationFrame(()=>{const el=document.querySelector(`[data-detail-name="${CSS.escape(songId)}"][data-detail-index="${index}"]`);if(el){el.focus();el.select();}});}
-function moveDetail(songId,index,direction){const song=getSong(songId);if(!song)return;const target=index+direction;if(index<0||target<0||target>=song.sections.length)return;[song.sections[index],song.sections[target]]=[song.sections[target],song.sections[index]];persist();render();}
-function deleteDetail(songId,index){const song=getSong(songId);if(!song?.sections[index])return;const label=song.sections[index].name.trim()||"this song detail";if(!confirm(`Delete "${label}"?`))return;song.sections.splice(index,1);persist();render();}
+function moveDetail(songId,index,direction){const song=getSong(songId);if(!song)return;const target=index+direction;if(index<0||target<0||target>=song.sections.length)return;[song.sections[index],song.sections[target]]=[song.sections[target],song.sections[index]];if(!persist()){[song.sections[index],song.sections[target]]=[song.sections[target],song.sections[index]];return;}render();}
+function deleteDetail(songId,index){const song=getSong(songId);if(!song?.sections[index])return;const label=song.sections[index].name.trim()||"this song detail";if(!confirm(`Delete "${label}"?`))return;const previous=song.sections; song.sections=song.sections.filter((_,i)=>i!==index); if(!persist()){song.sections=previous;return;}render();}
+function cycleDetailColor(songId,index){const song=getSong(songId);if(!song?.sections[index])return;const current=safeColor(song.sections[index].color),pos=colors.findIndex(c=>c.toLowerCase()===current.toLowerCase()),next=colors[(pos+1+colors.length)%colors.length];const previous=song.sections[index].color;song.sections[index].color=next;if(!persist()){song.sections[index].color=previous;return;}const button=document.querySelector(`[data-detail-color="${CSS.escape(songId)}"][data-detail-index="${index}"]`);if(button)button.style.setProperty("--tag-color",next);}
 function formatEventDate(date){if(!date)return"";const d=new Date(date+"T00:00:00");if(Number.isNaN(d.getTime()))return date;return d.toLocaleDateString("en-US",{day:"2-digit",month:"long",year:"numeric"});}
 function wrapLines(ctx,text,maxWidth){const out=[];for(const p of String(text||"").split(/\r?\n/)){if(!p.trim()){out.push("");continue;}let line="";for(const word of p.trim().split(/\s+/)){const test=line?line+" "+word:word;if(ctx.measureText(test).width<=maxWidth)line=test;else if(line){out.push(line);line=word;}else{let chunk="";for(const ch of word){const testChunk=chunk+ch;if(ctx.measureText(testChunk).width>maxWidth&&chunk){out.push(chunk);chunk=ch;}else chunk=testChunk;}line=chunk;}}if(line)out.push(line);}return out.length?out:[""];}
 function roundRect(ctx,x,y,w,h,r){const rr=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+rr,y);ctx.arcTo(x+w,y,x+w,y+h,rr);ctx.arcTo(x+w,y+h,x,y+h,rr);ctx.arcTo(x,y+h,x,y,rr);ctx.arcTo(x,y,x+w,y,rr);ctx.closePath();}
 function exportSongImage(songId){
   const song=getSong(songId);if(!song)return;
-  const scale=2,width=1200,pad=60,cw=width-pad*2,gap=14,title=String(song.title||"").trim()||"Song Title",baseKey=String(song.baseKey||"").trim(),eventName=String(state.eventName||"").trim(),eventDate=formatEventDate(state.eventDate),sections=song.sections||[];
-  const m=document.createElement("canvas").getContext("2d");const keyW=190,keyH=112,keyGap=28,titleW=cw-keyW-keyGap;m.font="800 54px Inter,Arial,sans-serif";const titleLines=wrapLines(m,title,titleW).slice(0,2);const titleLineH=62,headerTop=pad,titleAscent=(m.measureText("Hg").actualBoundingBoxAscent||50),titleTop=headerTop+titleAscent,titleBottom=titleTop+(titleLines.length-1)*titleLineH+(m.measureText("Hg").actualBoundingBoxDescent||10);
-  const metaText=[eventName,eventDate].filter(Boolean).join(" • ");const metaTop=titleBottom+4,metaLineH=30,subtitleTop=metaTop+(metaText?metaLineH+8:0),headerBottom=Math.max(headerTop+keyH,subtitleTop+24)+28,songDetailsLabelY=headerBottom+2,leftW=240,rightW=cw-leftW-34;m.font="16px Inter,Arial,sans-serif";let total=songDetailsLabelY+34;
-  sections.forEach(s=>{m.font="700 24px Inter,Arial,sans-serif";const nameLines=wrapLines(m,String(s.name||"Untitled"),leftW-54).slice(0,2);m.font="500 22px Inter,Arial,sans-serif";const note=String(s.note||"").trim(),noteLines=note?wrapLines(m,note,rightW-34):[],nameHeight=42+(nameLines.length-1)*29,noteHeight=noteLines.length?42+(noteLines.length-1)*32:42,contentHeight=Math.max(nameHeight,noteHeight);total+=Math.max(72,contentHeight+24)+gap;});
-  total+=34+pad;const c=document.createElement("canvas");c.width=width*scale;c.height=Math.max(600,total)*scale;const ctx=c.getContext("2d");ctx.scale(scale,scale);const H=c.height/scale;const bg=ctx.createLinearGradient(0,0,0,H);bg.addColorStop(0,"#102033");bg.addColorStop(.34,"#05090f");bg.addColorStop(1,"#03070c");ctx.fillStyle=bg;ctx.fillRect(0,0,width,H);
-  const glow=ctx.createRadialGradient(pad+250,headerTop+70,20,pad+250,headerTop+70,430);glow.addColorStop(0,"rgba(77,163,255,.10)");glow.addColorStop(1,"rgba(77,163,255,0)");ctx.fillStyle=glow;ctx.fillRect(0,0,width,headerBottom+30);
-  ctx.fillStyle="#f3f6fb";ctx.font="800 54px Inter,Arial,sans-serif";titleLines.forEach((line,i)=>ctx.fillText(line,pad,titleTop+i*titleLineH));
-  if(metaText){ctx.fillStyle="#b8d0ee";ctx.font="800 24px Inter,Arial,sans-serif";ctx.fillText(metaText,pad,metaTop+23);}
-  const subY=subtitleTop,docX=pad,docY=subY+1;ctx.strokeStyle="#a9bdd7";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(docX+4,docY);ctx.lineTo(docX+19,docY);ctx.lineTo(docX+25,docY+6);ctx.lineTo(docX+25,docY+25);ctx.lineTo(docX+4,docY+25);ctx.closePath();ctx.moveTo(docX+19,docY);ctx.lineTo(docX+19,docY+7);ctx.lineTo(docX+25,docY+7);ctx.stroke();ctx.beginPath();ctx.moveTo(docX+9,docY+12);ctx.lineTo(docX+20,docY+12);ctx.moveTo(docX+9,docY+17);ctx.lineTo(docX+20,docY+17);ctx.stroke();ctx.fillStyle="#a9bdd7";ctx.font="18px Inter,Arial,sans-serif";ctx.fillText("Song Map",pad+40,subY+20);
-  const keyX=width-pad-keyW,keyY=headerTop,keyText=baseKey||"—";ctx.fillStyle="#09121c";ctx.strokeStyle=baseKey?"#4da3ff":"#26374c";ctx.lineWidth=1.5;roundRect(ctx,keyX,keyY,keyW,keyH,16);ctx.fill();ctx.stroke();ctx.fillStyle="#8fb2da";ctx.font="800 12px Inter,Arial,sans-serif";ctx.fillText("BASE KEY",keyX+20,keyY+25);ctx.fillStyle=baseKey?"#f3f6fb":"#6f829a";ctx.font="900 52px Inter,Arial,sans-serif";const keyMeasure=ctx.measureText(keyText).width;ctx.fillText(keyText,keyX+keyW/2-keyMeasure/2,keyY+82);
-  ctx.strokeStyle="#203044";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad,headerBottom);ctx.lineTo(pad+cw,headerBottom);ctx.stroke();let y=songDetailsLabelY+30;ctx.fillStyle="#9fb5d6";ctx.font="800 14px Inter,Arial,sans-serif";ctx.fillText("SONG DETAILS",pad,y);y+=28;
-  sections.forEach(s=>{const accent=safeColor(s.color),name=String(s.name||"Untitled"),note=String(s.note||"").trim();m.font="700 24px Inter,Arial,sans-serif";const nameLines=wrapLines(m,name,leftW-54).slice(0,2);m.font="500 22px Inter,Arial,sans-serif";const noteLines=note?wrapLines(m,note,rightW-34):[],nameHeight=42+(nameLines.length-1)*29,noteHeight=noteLines.length?42+(noteLines.length-1)*32:42,contentHeight=Math.max(nameHeight,noteHeight),h=Math.max(72,contentHeight+24);ctx.fillStyle="#09121c";ctx.strokeStyle=accent+"88";ctx.lineWidth=1;roundRect(ctx,pad,y,cw,h,12);ctx.fill();ctx.stroke();ctx.fillStyle=accent;ctx.fillRect(pad,y,7,h);ctx.beginPath();ctx.arc(pad+34,y+36,7,0,Math.PI*2);ctx.fill();ctx.fillStyle="#f3f6fb";ctx.font="700 24px Inter,Arial,sans-serif";nameLines.forEach((line,i)=>ctx.fillText(line,pad+52,y+42+i*29));ctx.strokeStyle="#25364b";ctx.beginPath();ctx.moveTo(pad+leftW,y+18);ctx.lineTo(pad+leftW,y+h-18);ctx.stroke();if(noteLines.length){ctx.fillStyle="#dce7f5";ctx.font="500 22px Inter,Arial,sans-serif";noteLines.forEach((line,i)=>ctx.fillText(line,pad+leftW+24,y+42+i*32));}y+=h+gap;});
-  const footerY=y+10;ctx.strokeStyle="#203044";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad,footerY);ctx.lineTo(pad+cw,footerY);ctx.stroke();ctx.fillStyle="#8295ad";ctx.font="500 16px Inter,Arial,sans-serif";ctx.fillText("Author: josiasebastianj",pad,footerY+27);ctx.fillText("Version: "+APP_VERSION,pad,footerY+49);
+  const dark=getTheme()==="dark";const scale=2,width=1200,pad=60,cw=width-pad*2,gap=14,title=String(song.title||"").trim()||"Song Title",baseKey=String(song.baseKey||"").trim(),eventName=String(state.eventName||"").trim(),eventDate=formatEventDate(state.eventDate),sections=song.sections||[];
+  const palette=dark?{bg1:"#132131",bg2:"#07111b",text:"#f1f5f9",muted:"#9aa8b7",line:"#2b4055",surface:"#0d1823",keyLine:"#4d8dff"}:{bg1:"#fbfaf6",bg2:"#f2f0e9",text:"#17202b",muted:"#6b7480",line:"#d8d6cf",surface:"#fcfbf7",keyLine:"#7aaeff"};
+  const m=document.createElement("canvas").getContext("2d");const keyW=190,keyH=112,keyGap=28,titleW=cw-keyW-keyGap;m.font="700 54px Georgia,serif";const titleLines=wrapLines(m,title,titleW).slice(0,2),titleLineH=62,headerTop=pad,titleAscent=(m.measureText("Hg").actualBoundingBoxAscent||48),titleTop=headerTop+titleAscent,titleBottom=titleTop+(titleLines.length-1)*titleLineH+(m.measureText("Hg").actualBoundingBoxDescent||10);const metaText=[eventName,eventDate].filter(Boolean).join(" • "),metaTop=titleBottom+4,metaLineH=30,subtitleTop=metaTop+(metaText?metaLineH+8:0),headerBottom=Math.max(headerTop+keyH,subtitleTop+24)+28,songDetailsLabelY=headerBottom+2,leftW=240,rightW=cw-leftW-34;m.font="16px Inter,Arial,sans-serif";let total=songDetailsLabelY+34;sections.forEach(s=>{m.font="700 22px Inter,Arial,sans-serif";const nameLines=wrapLines(m,String(s.name||"Untitled"),leftW-54).slice(0,2);m.font="500 20px Inter,Arial,sans-serif";const note=String(s.note||"").trim(),noteLines=note?wrapLines(m,note,rightW-34):[],nameHeight=42+(nameLines.length-1)*29,noteHeight=noteLines.length?42+(noteLines.length-1)*30:42;total+=Math.max(72,Math.max(nameHeight,noteHeight)+24)+gap;});
+  total+=70+pad;const c=document.createElement("canvas");c.width=width*scale;c.height=Math.max(600,total)*scale;const ctx=c.getContext("2d");ctx.scale(scale,scale);const H=c.height/scale;const bg=ctx.createLinearGradient(0,0,0,H);bg.addColorStop(0,palette.bg1);bg.addColorStop(.55,palette.bg2);bg.addColorStop(1,dark?"#07111b":"#eeeae1");ctx.fillStyle=bg;ctx.fillRect(0,0,width,H);
+  ctx.fillStyle=palette.text;ctx.font="700 54px Georgia,serif";titleLines.forEach((line,i)=>ctx.fillText(line,pad,titleTop+i*titleLineH));if(metaText){ctx.fillStyle=palette.muted;ctx.font="700 22px Inter,Arial,sans-serif";ctx.fillText(metaText,pad,metaTop+21);}ctx.strokeStyle=palette.line;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad,headerBottom);ctx.lineTo(pad+cw,headerBottom);ctx.stroke();
+  const keyX=width-pad-keyW,keyY=headerTop,keyText=baseKey||"—";ctx.fillStyle=palette.surface;ctx.strokeStyle=baseKey?palette.keyLine:palette.line;ctx.lineWidth=1.5;roundRect(ctx,keyX,keyY,keyW,keyH,14);ctx.fill();ctx.stroke();ctx.fillStyle=palette.muted;ctx.font="800 12px Inter,Arial,sans-serif";ctx.fillText("BASE KEY",keyX+20,keyY+25);ctx.fillStyle=palette.text;ctx.font="900 52px Inter,Arial,sans-serif";const keyMeasure=ctx.measureText(keyText).width;ctx.fillText(keyText,keyX+keyW/2-keyMeasure/2,keyY+82);
+  let y=songDetailsLabelY+30;ctx.fillStyle=palette.muted;ctx.font="800 14px Inter,Arial,sans-serif";ctx.fillText("SONG DETAILS",pad,y);y+=28;sections.forEach(s=>{const accent=safeColor(s.color),name=String(s.name||"Untitled"),note=String(s.note||"").trim();m.font="700 22px Inter,Arial,sans-serif";const nameLines=wrapLines(m,name,leftW-54).slice(0,2);m.font="500 20px Inter,Arial,sans-serif";const noteLines=note?wrapLines(m,note,rightW-34):[],nameHeight=42+(nameLines.length-1)*29,noteHeight=noteLines.length?42+(noteLines.length-1)*30:42,contentHeight=Math.max(nameHeight,noteHeight),h=Math.max(72,contentHeight+24);ctx.fillStyle=palette.surface;ctx.strokeStyle=accent+"99";ctx.lineWidth=1;roundRect(ctx,pad,y,cw,h,10);ctx.fill();ctx.stroke();ctx.fillStyle=accent;ctx.fillRect(pad,y,7,h);ctx.beginPath();ctx.arc(pad+34,y+36,7,0,Math.PI*2);ctx.fill();ctx.fillStyle=palette.text;ctx.font="700 22px Inter,Arial,sans-serif";nameLines.forEach((line,i)=>ctx.fillText(line,pad+52,y+42+i*29));ctx.strokeStyle=palette.line;ctx.beginPath();ctx.moveTo(pad+leftW,y+18);ctx.lineTo(pad+leftW,y+h-18);ctx.stroke();if(noteLines.length){ctx.fillStyle=palette.text;ctx.font="500 20px Inter,Arial,sans-serif";noteLines.forEach((line,i)=>ctx.fillText(line,pad+leftW+24,y+42+i*30));}y+=h+gap;});
+  const footerY=y+10;ctx.strokeStyle=palette.line;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad,footerY);ctx.lineTo(pad+cw,footerY);ctx.stroke();ctx.fillStyle=palette.muted;ctx.font="500 15px Inter,Arial,sans-serif";ctx.fillText("setlist.app",pad,footerY+27);ctx.fillText("Author: josiasebastianj",pad+120,footerY+27);ctx.fillText("Version: "+APP_VERSION,pad+360,footerY+27);
   const link=document.createElement("a"),safeFilename=(title||"song-structure").replace(/[\\/:*?"<>|]+/g,"-").replace(/\s+/g," ").trim()||"song-structure";link.download=safeFilename+".png";link.href=c.toDataURL("image/png");link.click();
 }
 
+const actionsMenu=document.getElementById("actionsMenu"),actionsTrigger=document.getElementById("actionsTrigger");
+function closeActions(){actionsMenu.classList.remove("open");actionsTrigger.setAttribute("aria-expanded","false");}
+function toggleActions(){const open=!actionsMenu.classList.contains("open");actionsMenu.classList.toggle("open",open);actionsTrigger.setAttribute("aria-expanded",String(open));}
+actionsTrigger.onclick=toggleActions;
+document.getElementById("themeToggle").onclick=()=>{setTheme(getTheme()==="dark"?"light":"dark");};
+document.addEventListener("click",e=>{if(!actionsMenu.contains(e.target))closeActions();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeActions();});
 document.getElementById("addSong").onclick=addSong;
 document.getElementById("eventName").addEventListener("input",e=>{state.eventName=e.target.value;persist();});
 document.getElementById("eventDate").addEventListener("input",e=>{state.eventDate=e.target.value;persist();});
 document.getElementById("exportBtn").onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="setlist-event.json";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),0);};
 document.getElementById("importBtn").onclick=()=>document.getElementById("fileInput").click();
-document.getElementById("resetBtn").onclick=()=>{if(!confirm("Reset the event? All songs and their details will be removed."))return;const previous=state;state=structuredClone(blankState);expandedSongs.clear();if(!persist()){state=previous;state.songs.forEach(song=>expandedSongs.add(song.id));return;}render();};
-document.getElementById("fileInput").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const imported=normalizeEvent(JSON.parse(r.result));if(!imported)throw new Error("unsupported");const previous=state;state=imported;expandedSongs.clear();state.songs.forEach(song=>expandedSongs.add(song.id));if(!persist())state=previous;render();}catch(err){alert("The JSON file is invalid or uses an unsupported format.");}finally{e.target.value="";}};r.onerror=()=>{alert("The JSON file could not be read.");e.target.value="";};r.readAsText(f);};
+document.getElementById("resetBtn").onclick=()=>{if(!confirm("Reset the event? All songs and their details will be removed."))return;const previous=state;state=structuredClone(blankState);activeSongId=null;if(!persist()){state=previous;activeSongId=state.songs[0]?.id||null;return;}render();};
+document.getElementById("fileInput").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const imported=normalizeEvent(JSON.parse(r.result));if(!imported)throw new Error("unsupported");const previous=state,previousActive=activeSongId;state=imported;activeSongId=state.songs[0]?.id||null;if(!persist()){state=previous;activeSongId=previousActive;}render();}catch(err){alert("The JSON file is invalid or uses an unsupported format.");}finally{e.target.value="";}};r.onerror=()=>{alert("The JSON file could not be read.");e.target.value="";};r.readAsText(f);};
 
 document.addEventListener("click",e=>{
-  const toggle=e.target.closest("[data-song-toggle]");if(toggle){const id=toggle.dataset.songToggle;if(expandedSongs.has(id))expandedSongs.delete(id);else expandedSongs.add(id);render();return;}
+  const select=e.target.closest("[data-song-select]");if(select){activeSongId=select.dataset.songSelect;render();return;}
   const up=e.target.closest("[data-song-up]");if(up){moveSong(up.dataset.songUp,-1);return;}
   const down=e.target.closest("[data-song-down]");if(down){moveSong(down.dataset.songDown,1);return;}
   const del=e.target.closest("[data-song-delete]");if(del){deleteSong(del.dataset.songDelete);return;}
@@ -182,23 +190,21 @@ document.addEventListener("click",e=>{
   const detailUp=e.target.closest("[data-detail-up]");if(detailUp){moveDetail(detailUp.dataset.detailUp,Number(detailUp.dataset.detailIndex),-1);return;}
   const detailDown=e.target.closest("[data-detail-down]");if(detailDown){moveDetail(detailDown.dataset.detailDown,Number(detailDown.dataset.detailIndex),1);return;}
   const detailDel=e.target.closest("[data-detail-delete]");if(detailDel){deleteDetail(detailDel.dataset.detailDelete,Number(detailDel.dataset.detailIndex));return;}
+  const color=e.target.closest("[data-detail-color]");if(color){cycleDetailColor(color.dataset.detailColor,Number(color.dataset.detailIndex));return;}
 });
 
 document.addEventListener("input",e=>{
-  const songTitle=e.target.closest("[data-song-title]");if(songTitle){const song=getSong(songTitle.dataset.songTitle);if(song){song.title=songTitle.value;persist();}return;}
-  const songKey=e.target.closest("[data-song-key]");if(songKey){const song=getSong(songKey.dataset.songKey);if(song){song.baseKey=songKey.value;persist();}return;}
-  const detailName=e.target.closest("[data-detail-name]");if(detailName){const song=getSong(detailName.dataset.detailName),i=Number(detailName.dataset.detailIndex);if(song?.sections[i]){song.sections[i].name=detailName.value;persist();}return;}
+  const songTitle=e.target.closest("[data-song-title]");if(songTitle){const song=getSong(songTitle.dataset.songTitle);if(song){song.title=songTitle.value;persist();renderSidebarOnly();}return;}
+  const songKey=e.target.closest("[data-song-key]");if(songKey){const song=getSong(songKey.dataset.songKey);if(song){song.baseKey=songKey.value;persist();renderSidebarOnly();}return;}
+  const detailName=e.target.closest("[data-detail-name]");if(detailName){const song=getSong(detailName.dataset.detailName),i=Number(detailName.dataset.detailIndex);if(song?.sections[i]){song.sections[i].name=detailName.value;persist();updateDetailTag(detailName); }return;}
   const detailNote=e.target.closest("[data-detail-note]");if(detailNote){const song=getSong(detailNote.dataset.detailNote),i=Number(detailNote.dataset.detailIndex);if(song?.sections[i]){song.sections[i].note=detailNote.value;persist();}}
 });
-
+function renderSidebarOnly(){const list=document.getElementById("songList");list.innerHTML="";state.songs.forEach((song,index)=>{const button=document.createElement("button");button.type="button";button.className=`song-nav-item${song.id===activeSongId?" active":""}`;button.dataset.songSelect=song.id;button.innerHTML=`<span class="song-nav-number">${songNumber(index)}</span><span class="song-nav-title">${esc(song.title.trim()||"Untitled Song")}</span><span class="song-nav-key">${esc(song.baseKey.trim()||"—")}</span><span class="song-nav-arrow">›</span>`;list.appendChild(button);});document.getElementById("songCount").textContent=`${state.songs.length} ${state.songs.length===1?"song":"songs"}`;}
+function updateDetailTag(input){const row=input.closest(".detail-row");const tag=row?.querySelector(".tag");if(tag)tag.textContent=input.value.trim()||"Untitled";}
+initTheme();
 render();
 })();
 </script>
-
-  <footer class="app-footer" aria-label="Application information">
-    <div>Author: josiasebastianj</div>
-    <div>Version: 2.0.0</div>
-  </footer>
 
 </body>
 </html>
