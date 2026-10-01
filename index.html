@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
-<!-- setlist.app v2.2.0 | Event sharing | Event → Songs → Song Details -->
+<!-- setlist.app v2.3.0 | Supabase persistence & event sharing | Event → Songs → Song Details -->
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>setlist.app v2.2.0</title>
+<title>setlist.app v2.3.0</title>
 <style>
 :root{
   --bg:#f7f5ef; --surface:#fcfbf7; --surface-2:#f2f0e9; --text:#17202b; --muted:#6b7480;
@@ -60,6 +60,7 @@ body.view-only .detail-row{grid-template-columns:minmax(190px,250px) minmax(0,1f
       <div class="brand-tagline">Simple. Organized. Ready for Worship.</div>
     </div>
     <div class="top-actions">
+      <button class="btn primary" id="saveBtn" type="button" title="Save this event to Supabase">Save</button>
       <button class="btn" id="shareBtn" type="button" title="Copy a view-only link to this event">Share</button>
       <button class="theme-top-toggle" id="themeToggle" type="button" aria-label="Switch theme"><span class="theme-icon" id="themeIcon">☼</span><span id="themeLabel">Light Mode</span></button>
       <div class="actions-menu" id="actionsMenu">
@@ -102,12 +103,12 @@ body.view-only .detail-row{grid-template-columns:minmax(190px,250px) minmax(0,1f
 
   <footer class="app-footer" aria-label="Application information">
     <div class="app-footer-brand">setlist.app</div>
-    <div class="app-footer-meta"><span>Author: josiasebastianj</span><span>Version: 2.2.0</span></div>
+    <div class="app-footer-meta"><span>Author: josiasebastianj</span><span>Version: 2.3.0</span></div>
   </footer>
   <dialog class="share-dialog" id="shareDialog" aria-labelledby="shareDialogTitle">
     <form method="dialog" class="share-dialog-inner">
       <div class="share-dialog-title" id="shareDialogTitle">Shareable link ready</div>
-      <p class="share-dialog-copy">Anyone with this link can view this event, its songs and song details (read-only). The link is a snapshot, so share a new link after making changes.</p>
+      <p class="share-dialog-copy">Anyone with this link can view this event, its songs and song details (read-only). Save the event again after making changes so the shared link shows the latest data.</p>
       <input class="share-dialog-url" id="shareUrl" type="text" readonly aria-label="Shareable link">
       <p class="share-dialog-hint" id="shareHint" hidden>Couldn't access the clipboard. The link is selected, so press Ctrl+C (or ⌘C) to copy it.</p>
       <div class="share-dialog-actions">
@@ -117,38 +118,96 @@ body.view-only .detail-row{grid-template-columns:minmax(190px,250px) minmax(0,1f
     </form>
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./supabase-config.js"></script>
 </div>
 <script>
 (() => {
-const APP_VERSION="2.2.0";
-// Intentionally frozen at v2_0_0: the storage schema hasn't changed since v2.0.0, so the
-// key is NOT bumped on every release. Do not "fix" this to match APP_VERSION.
-const KEY="setlistApp_v2_0_0";
+const APP_VERSION="2.3.0";
 const THEME_KEY="setlistApp_theme";
-const LEGACY_KEYS=["songStructureTimeline_v1_4_2","songStructureTimeline_v1_4_1","songStructureTimeline_v1_3_0"];
 const colors=["#8fc5ff","#93dfb2","#ffd37d","#8edbe8","#f3a5c6","#f5c58a","#c5a5f5","#b6a9f5","#9cdda9"];
 const DEFAULT_EVENT_NAME="";
 const DEFAULT_EVENT_DATE="";
 const blankState={eventName:DEFAULT_EVENT_NAME,eventDate:DEFAULT_EVENT_DATE,songs:[]};
-const SHARE_PREFIX="#share=";
-const MAX_SHARE_BYTES=1000000;
-let state=load();
-let activeSongId=state.songs[0]?.id||null;
+const SHARE_PARAM="share";
+const supabaseConfig=window.SETLIST_SUPABASE_CONFIG||{};
+const supabaseUrl=String(supabaseConfig.url||"").trim();
+const supabasePublishableKey=String(supabaseConfig.publishableKey||"").trim();
+const supabase=(window.supabase&&supabaseUrl&&supabasePublishableKey)
+  ? window.supabase.createClient(supabaseUrl,supabasePublishableKey)
+  : null;
+let state=structuredClone(blankState);
+let activeSongId=null;
 let viewOnly=false;
+let eventId=null;
+let savedShareToken=null;
 
 function uid(prefix){return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;}
 function safeColor(value){const color=String(value||"").trim();return /^#[0-9a-fA-F]{6}$/.test(color)?color:"#8fc5ff";}
 function normalizeSections(sections){return (Array.isArray(sections)?sections:[]).map((s,i)=>({id:String(s?.id||uid("section")),name:String(s?.name??"").trim(),color:safeColor(s?.color||colors[i%colors.length]),note:String(s?.note??"")}));}
 function normalizeSong(song){return{id:String(song?.id||uid("song")),title:typeof song?.title==="string"?song.title:"",baseKey:typeof song?.baseKey==="string"?song.baseKey:"",sections:normalizeSections(song?.sections)};}
 function normalizeEvent(value){if(!value||typeof value!=="object")return null;if(Array.isArray(value.songs))return{eventName:typeof value.eventName==="string"?value.eventName:"",eventDate:typeof value.eventDate==="string"?value.eventDate:"",songs:value.songs.map(normalizeSong)};if(Array.isArray(value.sections)){return{eventName:typeof value.serviceTitle==="string"?value.serviceTitle:"",eventDate:typeof value.serviceDate==="string"?value.serviceDate:"",songs:[normalizeSong({title:value.title||"",baseKey:value.baseKey||"",sections:value.sections})]};}return null;}
-function load(){try{const current=localStorage.getItem(KEY);if(current){const parsed=normalizeEvent(JSON.parse(current));if(parsed)return parsed;}for(const legacyKey of LEGACY_KEYS){const raw=localStorage.getItem(legacyKey);if(!raw)continue;const migrated=normalizeEvent(JSON.parse(raw));if(migrated){try{localStorage.setItem(KEY,JSON.stringify(migrated));}catch(e){}return migrated;}}}catch(e){}return structuredClone(blankState);}
-function toBase64Url(bytes){let bin="";for(let i=0;i<bytes.length;i+=0x8000)bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));return btoa(bin).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");}
-function fromBase64Url(str){const b64=str.replace(/-/g,"+").replace(/_/g,"/");const bin=atob(b64+"===".slice((b64.length+3)%4));const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return bytes;}
-async function encodeShare(event){const payload={v:1,n:event.eventName||"",d:event.eventDate||"",s:event.songs.map(song=>({t:song.title,k:song.baseKey,x:song.sections.map(s=>[s.name,s.color,s.note])}))};const stream=new Blob([JSON.stringify(payload)]).stream().pipeThrough(new CompressionStream("deflate-raw"));return toBase64Url(new Uint8Array(await new Response(stream).arrayBuffer()));}
-// Share links are untrusted input: cap the inflated size so a crafted link can't exhaust memory.
-async function inflateCapped(bytes){const reader=new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw")).getReader();const chunks=[];let size=0;for(;;){const{done,value}=await reader.read();if(done)break;size+=value.length;if(size>MAX_SHARE_BYTES){await reader.cancel();throw new Error("share payload too large");}chunks.push(value);}return new Blob(chunks).text();}
-async function decodeShare(str){try{const payload=JSON.parse(await inflateCapped(fromBase64Url(str)));if(!payload||payload.v!==1||!Array.isArray(payload.s))return null;return normalizeEvent({eventName:payload.n,eventDate:payload.d,songs:payload.s.map(song=>({title:song?.t,baseKey:song?.k,sections:(Array.isArray(song?.x)?song.x:[]).map(x=>Array.isArray(x)?{name:x[0],color:x[1],note:x[2]}:null)}))});}catch(e){return null;}}
-function persist(){if(viewOnly)return true;try{localStorage.setItem(KEY,JSON.stringify(state));return true;}catch(e){alert("Data could not be saved in the browser. Please check storage permissions or available space.");return false;}}
+function persist(){return true;}
+function ensureSupabase(){if(supabase)return true;showBanner("Supabase is not configured. Add supabase-config.js before saving or sharing.",true);return false;}
+function setSaveButtonState(label,disabled=false){const button=document.getElementById("saveBtn");if(!button)return;button.textContent=label;button.disabled=disabled;}
+function eventPayload(){return{event_name:state.eventName.trim()||null,event_date:state.eventDate||null,data:{songs:state.songs}};}
+async function saveEvent(){
+  if(viewOnly||!ensureSupabase())return false;
+  setSaveButtonState("Saving…",true);
+  try{
+    const isNew=!eventId;
+    if(isNew)eventId=crypto.randomUUID();
+    const payload=eventPayload();
+    const result=isNew
+      ? await supabase.from("events").insert({id:eventId,...payload})
+      : await supabase.from("events").update(payload).eq("id",eventId);
+    if(result.error)throw result.error;
+    setSaveButtonState("Saved",false);
+    showToast("Event saved to Supabase");
+    setTimeout(()=>{if(!viewOnly)setSaveButtonState("Save",false);},1800);
+    return true;
+  }catch(error){
+    console.error(error);
+    setSaveButtonState("Save",false);
+    showBanner(`Could not save event: ${error?.message||"Unknown error"}`,true);
+    return false;
+  }
+}
+function randomShareToken(){
+  const bytes=new Uint8Array(18);crypto.getRandomValues(bytes);
+  return btoa(String.fromCharCode(...bytes)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/g,"");
+}
+async function createShareLink(){
+  if(viewOnly||!ensureSupabase())return null;
+  if(!eventId){const saved=await saveEvent();if(!saved)return null;}
+  const token=savedShareToken||randomShareToken();
+  try{
+    const {error}=await supabase.from("events").update({share_token:token}).eq("id",eventId);
+    if(error)throw error;
+    savedShareToken=token;
+    return `${location.origin}${location.pathname}?${SHARE_PARAM}=${encodeURIComponent(savedShareToken)}`;
+  }catch(error){
+    console.error(error);
+    showBanner(`Could not create share link: ${error?.message||"Unknown error"}`,true);
+    return null;
+  }
+}
+async function loadSharedEvent(token){
+  if(!ensureSupabase())return false;
+  try{
+    const {data,error}=await supabase.from("events").select("id,event_name,event_date,data,share_token").eq("share_token",token).maybeSingle();
+    if(error)throw error;
+    if(!data||!data.data)return false;
+    const shared=normalizeEvent({eventName:data.event_name,eventDate:data.event_date,songs:data.data.songs});
+    if(!shared)return false;
+    state=shared;eventId=data.id;savedShareToken=data.share_token||token;activeSongId=state.songs[0]?.id||null;viewOnly=true;
+    return true;
+  }catch(error){
+    console.error(error);
+    showBanner(`Could not load shared event: ${error?.message||"Unknown error"}`,true);
+    return false;
+  }
+}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
 function songNumber(i){return String(i+1).padStart(2,"0");}
 function getSong(id){return state.songs.find(song=>song.id===id);}
@@ -247,16 +306,18 @@ let toastTimer=null;
 function showToast(message){const toast=document.getElementById("toast");toast.textContent=message;toast.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove("show"),2200);}
 function showBanner(message,isError){const banner=document.getElementById("shareBanner");banner.classList.toggle("error",isError);banner.innerHTML=`<span>${esc(message)}</span><a href="${esc(location.pathname)}">Open my setlist</a>`;banner.hidden=false;}
 const shareDialog=document.getElementById("shareDialog"),shareUrl=document.getElementById("shareUrl"),shareHint=document.getElementById("shareHint");
-document.getElementById("shareBtn").onclick=async()=>{let url;try{url=location.origin+location.pathname+SHARE_PREFIX+await encodeShare(state);}catch(e){alert("Sharing is not supported in this browser.");return;}shareUrl.value=url;shareHint.hidden=true;shareDialog.showModal();};
+document.getElementById("saveBtn").onclick=saveEvent;
+document.getElementById("shareBtn").onclick=async()=>{const url=await createShareLink();if(!url)return;shareUrl.value=url;shareHint.hidden=true;shareDialog.showModal();};
 document.getElementById("copyShareBtn").onclick=async()=>{try{await navigator.clipboard.writeText(shareUrl.value);shareDialog.close();showToast("Link copied to clipboard");}catch(e){shareUrl.focus();shareUrl.select();shareHint.hidden=false;}};
 shareUrl.addEventListener("focus",()=>shareUrl.select());
 shareDialog.addEventListener("click",e=>{if(e.target===shareDialog)shareDialog.close();});
 async function initShare(){
-  if(!location.hash.startsWith(SHARE_PREFIX))return;
-  const shared=await decodeShare(location.hash.slice(SHARE_PREFIX.length));
-  if(!shared){showBanner("This share link is invalid or damaged.",true);return;}
-  state=shared;activeSongId=state.songs[0]?.id||null;viewOnly=true;
+  const token=new URLSearchParams(location.search).get(SHARE_PARAM);
+  if(!token)return;
+  const loaded=await loadSharedEvent(token);
+  if(!loaded){showBanner("This share link is invalid or the event is unavailable.",true);return;}
   document.body.classList.add("view-only");
+  document.getElementById("saveBtn").hidden=true;
   const eventName=document.getElementById("eventName");eventName.readOnly=true;eventName.placeholder="Untitled Event";
   document.getElementById("eventDate").readOnly=true;
   showBanner("Viewing a shared setlist · read-only",false);
