@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Port setlist.app v2.3.0 (single `index.html`) to a Next.js 16 TypeScript app on Vercel, then add Supabase Auth (email + password, Google) and a per-user events dashboard.
+**Goal:** Port setlist.app v2.4.0 (single `index.html`, phone-first redesign) to a Next.js 16 TypeScript app on Vercel, then add Supabase Auth (email + password, Google) and a per-user events dashboard.
 
 **Architecture:** App Router pages load data on the server with `@supabase/ssr`; the editor is one client component that talks to Supabase directly. Row Level Security is the security boundary (owner-only access), and public share links go through a `security definer` SQL function that exposes only name, date and songs. Current CSS moves to `globals.css` unchanged.
 
@@ -15,9 +15,11 @@
 - Version: `3.0.0` (`APP_VERSION` in `lib/event.ts`, `package.json`, footer, PNG export).
 - Env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Never put the secret / `service_role` key in the app.
 - No new runtime dependencies beyond `next`, `react`, `react-dom`, `@supabase/ssr`, `@supabase/supabase-js`. No Tailwind, no UI library, no test framework.
-- Styling: v2.3.0 `<style>` block copied verbatim into `app/globals.css`, with only `body.view-only` → `.view-only`. New CSS (dashboard, login) is appended and uses the existing CSS variables.
+- Styling: v2.4.0 `<style>` block copied verbatim into `app/globals.css`, with only `body.view-only` → `.view-only`. New CSS (dashboard, login) is appended and uses the existing CSS variables.
 - Footer text: `Author: josiasebastianj` and `Version: 3.0.0`. Tagline: `Simple. Organized. Ready for Worship.`
-- Theme key in localStorage: `setlistApp_theme` (unchanged, so users keep their theme).
+- Theme key in localStorage: `setlistApp_theme` (unchanged, so users keep their theme). With no stored value, the theme follows the device (`prefers-color-scheme`), as in v2.4.0.
+- Fonts: the v2.4.0 Google Fonts `<link>` (Fraunces, Plus Jakarta Sans) unchanged; CSS uses `var(--serif)` / `var(--sans)`.
+- Icons: the v2.4.0 SVG icons (sun, moon, plus, up, down, next, trash, image), never text glyphs.
 - Layout must work at phone width (≤680px) with no horizontal scroll.
 - Out of scope: password reset page, guest editing, collaborators, duplication, search, Playwright, redesign, Reset button (removed).
 
@@ -31,24 +33,23 @@
 
 ---
 
-### Task 0: Branch from v2.3.0
+### Task 0: Branch from v2.4.0
 
-`revamp-nextjs` is based on v2.1.0 (`b5428eb`) and lacks the v2.2.0/v2.3.0 work. Work on a new branch from `main`, carrying over the spec and plan commits.
+`revamp-nextjs` is based on v2.1.0 (`b5428eb`) and lacks the v2.2.0–v2.4.0 work. Work on a new branch from `main`, carrying over the spec and plan commits.
 
 - [ ] **Step 1: Create the branch and bring the docs**
 
 ```bash
 git fetch origin
 git switch -c nextjs-migration origin/main
-git cherry-pick 62c1c16          # spec commit
-git cherry-pick <plan-commit>    # the commit that added this plan (git log revamp-nextjs -1)
+git cherry-pick 62c1c16^..revamp-nextjs   # every spec/plan commit (docs/superpowers only)
 ```
 
 If your human partner prefers to keep the name `revamp-nextjs`, they reset and force-push that branch themselves. Don't do that without their explicit say-so.
 
 - [ ] **Step 2: Verify**
 
-Run: `git log --oneline -3` → shows the plan commit, the spec commit, then `02555e1 Replace Share button with Save popup and edit links (v2.3.0)`.
+Run: `git log --oneline -5` → shows the spec/plan commits, then `c3ccf1f Redesign setlist UI for phone-first reading (v2.4.0)`.
 
 ---
 
@@ -61,7 +62,7 @@ Run: `git log --oneline -3` → shows the plan commit, the spec commit, then `02
 **Interfaces:**
 - Produces (`lib/event.ts`):
   - `APP_VERSION: "3.0.0"`
-  - `colors: string[]` (9 hex colors, order as in v2.3.0)
+  - `colors: string[]` (9 hex colors, order as in v2.4.0)
   - `type Section = { id: string; name: string; color: string; note: string }`
   - `type Song = { id: string; title: string; baseKey: string; sections: Section[] }`
   - `type SetlistEvent = { eventName: string; eventDate: string; songs: Song[] }`
@@ -271,7 +272,7 @@ git commit -m "Scaffold Next.js app and port event data model with tests"
 ### Task 2: App shell, styles and theme
 
 **Files:**
-- Create: `app/globals.css` (replace scaffold's), `components/AppShell.tsx`, `components/ThemeToggle.tsx`
+- Create: `app/globals.css` (replace scaffold's), `components/Icon.tsx`, `components/AppShell.tsx`, `components/ThemeToggle.tsx`
 - Modify: `app/layout.tsx` (replace), `app/page.tsx` (replace, temporary)
 - Delete: `app/page.module.css`, `public/*.svg` (scaffold assets)
 
@@ -280,8 +281,9 @@ git commit -m "Scaffold Next.js app and port event data model with tests"
 - Produces:
   - `AppShell({ actions?: ReactNode; className?: string; children: ReactNode })`: renders `.app` > topbar (brand + `.top-actions` holding `actions`) > children > footer. Works in server and client components (no hooks).
   - `ThemeToggle()`: client button that toggles `document.documentElement.dataset.theme` and saves `setlistApp_theme`.
+  - `Icon({ name: IconName })` with `IconName = "sun" | "moon" | "plus" | "up" | "down" | "next" | "trash" | "image"`: renders `<svg class="ico" aria-hidden>`.
 
-- [ ] **Step 1: Copy the v2.3.0 CSS verbatim**
+- [ ] **Step 1: Copy the v2.4.0 CSS verbatim**
 
 ```bash
 git show origin/main:index.html | awk '/<style>/{f=1;next}/<\/style>/{f=0}f' | sed 's/body\.view-only/.view-only/g' > app/globals.css
@@ -295,7 +297,7 @@ Check: `grep -c "view-only" app/globals.css` shows ≥3, and `grep -c "body.view
 ```css
 .dash,.auth-card{flex:1;border:1px solid var(--line);border-top:0;border-radius:0 0 10px 10px;background:var(--surface);box-shadow:var(--shadow);padding:30px 34px}
 .dash-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding-bottom:22px;border-bottom:1px solid var(--line)}
-.dash-title,.auth-title{margin:4px 0 0;font-family:Georgia,"Times New Roman",serif;font-size:32px;font-weight:700;letter-spacing:-.5px}
+.dash-title,.auth-title{margin:4px 0 0;font-family:var(--serif);font-size:32px;font-weight:700;letter-spacing:-.5px}
 .dash-sub{color:var(--muted);font-size:13px;margin-top:4px;overflow-wrap:anywhere}
 .dash-list{list-style:none;margin:0;padding:0}
 .dash-item{display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line)}
@@ -318,7 +320,7 @@ Check: `grep -c "view-only" app/globals.css` shows ≥3, and `grep -c "body.view
 
 - [ ] **Step 3: Write `app/layout.tsx`**
 
-The inline script sets the theme before the first paint so dark-mode users see no flash.
+The inline script sets the theme before the first paint (stored choice, else the device preference, like v2.4.0's `initTheme`), so there is no flash. The font `<link>` is copied from v2.4.0.
 
 ```tsx
 import type { Metadata } from "next";
@@ -330,13 +332,19 @@ export const metadata: Metadata = {
   description: "Simple. Organized. Ready for Worship.",
 };
 
-const themeScript = `try{if(localStorage.getItem("setlistApp_theme")==="dark")document.documentElement.dataset.theme="dark"}catch(e){}`;
+const themeScript = `(function(){var t=null;try{t=localStorage.getItem("setlistApp_theme")}catch(e){}document.documentElement.dataset.theme=t||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")})()`;
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet"
+        />
       </head>
       <body>{children}</body>
     </html>
@@ -344,7 +352,32 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 }
 ```
 
-- [ ] **Step 4: Write `components/AppShell.tsx`**
+- [ ] **Step 4: Write `components/Icon.tsx`** (paths copied from the v2.4.0 sprite)
+
+```tsx
+const paths = {
+  sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>,
+  moon: <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />,
+  plus: <path d="M12 5v14M5 12h14" />,
+  up: <path d="m18 15-6-6-6 6" />,
+  down: <path d="m6 9 6 6 6-6" />,
+  next: <path d="m9 18 6-6-6-6" />,
+  trash: <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6" />,
+  image: <><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-5-5L5 21" /></>,
+};
+
+export type IconName = keyof typeof paths;
+
+export default function Icon({ name }: { name: IconName }) {
+  return (
+    <svg className="ico" viewBox="0 0 24 24" aria-hidden="true">
+      {paths[name]}
+    </svg>
+  );
+}
+```
+
+- [ ] **Step 5: Write `components/AppShell.tsx`**
 
 ```tsx
 import type { ReactNode } from "react";
@@ -355,7 +388,7 @@ export default function AppShell({ actions, className = "", children }: { action
     <div className={`app ${className}`.trim()}>
       <header className="app-topbar">
         <div className="brand">
-          <div className="brand-name">setlist.app</div>
+          <div className="brand-name">setlist<span>.app</span></div>
           <div className="brand-divider" />
           <div className="brand-tagline">Simple. Organized. Ready for Worship.</div>
         </div>
@@ -363,7 +396,7 @@ export default function AppShell({ actions, className = "", children }: { action
       </header>
       {children}
       <footer className="app-footer" aria-label="Application information">
-        <div className="app-footer-brand">setlist.app</div>
+        <div className="app-footer-brand">setlist<span>.app</span></div>
         <div className="app-footer-meta">
           <span>Author: josiasebastianj</span>
           <span>Version: {APP_VERSION}</span>
@@ -374,14 +407,15 @@ export default function AppShell({ actions, className = "", children }: { action
 }
 ```
 
-- [ ] **Step 5: Write `components/ThemeToggle.tsx`**
+- [ ] **Step 6: Write `components/ThemeToggle.tsx`**
 
-The initial state reads the attribute the layout script already set. The server renders "light", so the label spans use `suppressHydrationWarning`.
+The initial state reads the attribute the layout script already set. The server renders "light", so the icon and label use `suppressHydrationWarning`.
 
 ```tsx
 "use client";
 
 import { useState } from "react";
+import Icon from "./Icon";
 
 type Theme = "light" | "dark";
 const current = (): Theme => (typeof document !== "undefined" && document.documentElement.dataset.theme === "dark" ? "dark" : "light");
@@ -402,14 +436,14 @@ export default function ThemeToggle() {
 
   return (
     <button className="theme-top-toggle" type="button" aria-label="Switch theme" onClick={toggle}>
-      <span className="theme-icon" suppressHydrationWarning>{theme === "dark" ? "☾" : "☼"}</span>
+      <span className="theme-icon" suppressHydrationWarning><Icon name={theme === "dark" ? "moon" : "sun"} /></span>
       <span suppressHydrationWarning>{theme === "dark" ? "Dark Mode" : "Light Mode"}</span>
     </button>
   );
 }
 ```
 
-- [ ] **Step 6: Temporary `app/page.tsx`** (replaced in Task 3 and Task 5)
+- [ ] **Step 7: Temporary `app/page.tsx`** (replaced in Task 3 and Task 5)
 
 ```tsx
 import AppShell from "@/components/AppShell";
@@ -424,20 +458,20 @@ export default function Home() {
 }
 ```
 
-- [ ] **Step 7: Verify**
+- [ ] **Step 8: Verify**
 
 Run: `npm run lint` → no errors. Run `npx tsc --noEmit` → no output.
 Run: `npm run dev` and open http://localhost:3000.
 Expected:
-- The page shows the v2.3.0 header: "setlist.app | Simple. Organized. Ready for Worship." with a "Light Mode" toggle, and the footer shows "Version: 3.0.0".
-- Clicking the toggle switches to Dark Mode. After a reload it stays dark, with no light flash.
+- The page shows the v2.4.0 header (Fraunces "setlist" with the accent-coloured ".app", the tagline, and a sun or moon icon toggle). The footer shows "Version: 3.0.0".
+- With no saved choice, the theme follows the OS setting. Clicking the toggle switches theme; after a reload the choice sticks, with no flash.
 - At 375px width there is no horizontal scroll.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
 git add -A app components public
-git commit -m "Add app shell, v2.3.0 styles and theme toggle"
+git commit -m "Add app shell, v2.4.0 styles, icons and theme toggle"
 ```
 
 ---
@@ -481,7 +515,7 @@ $$;
 grant execute on function public.get_shared_event(text) to anon, authenticated;
 ```
 
-Run it in the Supabase SQL Editor. It's additive, so the live v2.3.0 page keeps working.
+Run it in the Supabase SQL Editor. It's additive, so the live v2.4.0 page keeps working.
 
 - [ ] **Step 2: Supabase clients**
 
@@ -522,7 +556,7 @@ export async function createClient() {
 
 - [ ] **Step 3: Port the PNG export** — `lib/exportPng.ts`
 
-This is the v2.3.0 code with `state` → `event` and `getTheme()` → `dark`. The layout numbers are unchanged.
+This is the v2.4.0 code (unchanged since v2.3.0 apart from the version) with `state` → `event` and `getTheme()` → `dark`. The layout numbers are unchanged.
 
 ```ts
 import { APP_VERSION, formatEventDate, safeColor, type SetlistEvent, type Song } from "./event";
@@ -659,6 +693,7 @@ export function exportSongImage(event: SetlistEvent, song: Song, dark: boolean) 
 import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import AppShell from "./AppShell";
+import Icon from "./Icon";
 import ThemeToggle from "./ThemeToggle";
 import { colors, safeColor, uid, type Section, type SetlistEvent, type Song } from "@/lib/event";
 import { exportSongImage } from "@/lib/exportPng";
@@ -696,6 +731,11 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
   useEffect(() => {
     if (fallbackUrl) dialogRef.current?.showModal();
   }, [fallbackUrl]);
+
+  useEffect(() => {
+    // phone layout: keep the active song chip visible in the horizontal strip (v2.4.0)
+    document.querySelector(".song-nav-item.active")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [activeSongId]);
 
   useEffect(() => {
     const id = focusId.current;
@@ -852,7 +892,8 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
               <div className="nav-heading-title">SONGS</div>
               {!readOnly && (
                 <button className="btn primary compact" type="button" onClick={addSong}>
-                  ＋ Add Song
+                  <Icon name="plus" />
+                  Add Song
                 </button>
               )}
             </div>
@@ -873,7 +914,7 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
                     <span className="song-nav-number">{songNumber(i)}</span>
                     <span className="song-nav-title">{s.title.trim() || "Untitled Song"}</span>
                     <span className="song-nav-key">{s.baseKey.trim() || "—"}</span>
-                    <span className="song-nav-arrow">›</span>
+                    <span className="song-nav-arrow"><Icon name="next" /></span>
                   </button>
                 ))
               )}
@@ -900,7 +941,6 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
             <>
               <div className="main-header">
                 <div className="main-heading">
-                  <div className="back-mark" aria-hidden="true">‹</div>
                   {readOnly ? (
                     <h1 className="view-title">{song.title.trim() || "Untitled Song"}</h1>
                   ) : (
@@ -916,23 +956,27 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
                   <div className="header-song-actions">
                     {readOnly ? (
                       <div className="key-badge" title="Base key" aria-label={`Base key ${song.baseKey.trim() || "not set"}`}>
-                        {song.baseKey.trim() || "—"}
+                        <span aria-hidden="true">Key</span>
+                        <strong aria-hidden="true">{song.baseKey.trim() || "—"}</strong>
                       </div>
                     ) : (
                       <>
-                        <input
-                          className="key-input"
-                          value={song.baseKey}
-                          onChange={(e) => updateSong(song.id, (s) => ({ ...s, baseKey: e.target.value }))}
-                          placeholder="Key"
-                          aria-label="Base key"
-                        />
-                        <button className="icon-btn" type="button" title="Move song up" aria-label="Move song up" disabled={index === 0} onClick={() => moveSong(-1)}>↑</button>
-                        <button className="icon-btn" type="button" title="Move song down" aria-label="Move song down" disabled={index === event.songs.length - 1} onClick={() => moveSong(1)}>↓</button>
-                        <button className="icon-btn danger" type="button" title="Delete song" aria-label="Delete song" onClick={deleteSong}>⌫</button>
+                        <label className="key-field">
+                          <span>Key</span>
+                          <input
+                            className="key-input"
+                            value={song.baseKey}
+                            onChange={(e) => updateSong(song.id, (s) => ({ ...s, baseKey: e.target.value }))}
+                            placeholder="—"
+                            aria-label="Base key"
+                          />
+                        </label>
+                        <button className="icon-btn" type="button" title="Move song up" aria-label="Move song up" disabled={index === 0} onClick={() => moveSong(-1)}><Icon name="up" /></button>
+                        <button className="icon-btn" type="button" title="Move song down" aria-label="Move song down" disabled={index === event.songs.length - 1} onClick={() => moveSong(1)}><Icon name="down" /></button>
+                        <button className="icon-btn danger" type="button" title="Delete song" aria-label="Delete song" onClick={deleteSong}><Icon name="trash" /></button>
                       </>
                     )}
-                    <button className="export-btn" type="button" onClick={exportPng}>Export PNG</button>
+                    <button className="export-btn" type="button" onClick={exportPng}><Icon name="image" />Export PNG</button>
                   </div>
                 </div>
               </div>
@@ -945,7 +989,7 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
                   ) : (
                     song.sections.map((section, i) =>
                       readOnly ? (
-                        <div className="detail-row" key={section.id}>
+                        <div className="detail-row" key={section.id} style={tagColor(section.color)}>
                           <div className="detail-name-wrap">
                             <span className="color-dot static" style={tagColor(section.color)} aria-hidden="true" />
                             <div className="view-detail-name">{section.name.trim() || "Untitled"}</div>
@@ -953,8 +997,7 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
                           <div className="view-detail-note">{section.note}</div>
                         </div>
                       ) : (
-                        <div className="detail-row" key={section.id}>
-                          <div className="drag" aria-hidden="true">⋮⋮</div>
+                        <div className="detail-row" key={section.id} style={tagColor(section.color)}>
                           <div className="detail-name-wrap">
                             <button className="color-dot" type="button" style={tagColor(section.color)} title="Change section color" aria-label="Change section color" onClick={() => cycleColor(i)} />
                             <input
@@ -975,9 +1018,9 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
                             placeholder="Add notes..."
                           />
                           <div className="detail-tools">
-                            <button className="icon-btn" type="button" title="Move up" aria-label="Move song detail up" disabled={i === 0} onClick={() => updateSections((s) => swap(s, i, i - 1))}>↑</button>
-                            <button className="icon-btn" type="button" title="Move down" aria-label="Move song detail down" disabled={i === song.sections.length - 1} onClick={() => updateSections((s) => swap(s, i, i + 1))}>↓</button>
-                            <button className="icon-btn danger" type="button" title="Delete song detail" aria-label="Delete song detail" onClick={() => deleteDetail(i)}>⌫</button>
+                            <button className="icon-btn" type="button" title="Move up" aria-label="Move song detail up" disabled={i === 0} onClick={() => updateSections((s) => swap(s, i, i - 1))}><Icon name="up" /></button>
+                            <button className="icon-btn" type="button" title="Move down" aria-label="Move song detail down" disabled={i === song.sections.length - 1} onClick={() => updateSections((s) => swap(s, i, i + 1))}><Icon name="down" /></button>
+                            <button className="icon-btn danger" type="button" title="Delete song detail" aria-label="Delete song detail" onClick={() => deleteDetail(i)}><Icon name="trash" /></button>
                           </div>
                         </div>
                       ),
@@ -985,13 +1028,13 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
                   )}
                 </div>
                 {!readOnly && (
-                  <button className="btn add-detail" type="button" onClick={addDetail}>＋ Add Song Detail</button>
+                  <button className="btn add-detail" type="button" onClick={addDetail}><Icon name="plus" />Add Song Detail</button>
                 )}
               </div>
 
               <div className="main-bottom">
                 <div className="song-position">Song {songNumber(index)} of {event.songs.length}</div>
-                {!readOnly && <button className="export-btn" type="button" onClick={exportPng}>Export PNG</button>}
+                {!readOnly && <button className="export-btn" type="button" onClick={exportPng}><Icon name="image" />Export PNG</button>}
               </div>
             </>
           )}
@@ -1020,7 +1063,7 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
 }
 ```
 
-"Open my setlist" goes to `/`, which redirects to the dashboard or the login page.
+Each detail card's colour rail comes from `--tag-color` on the row (v2.4.0), and the v2.4.0 CSS hides empty read-only notes (`.view-detail-note:empty`). "Open my setlist" goes to `/`, which redirects to the dashboard or the login page.
 
 - [ ] **Step 5: Pages**
 
@@ -1087,20 +1130,20 @@ git rm index.html supabase-config.js
 Run: `npm test && npx tsc --noEmit && npm run lint && npm run build`
 Expected: tests pass, no type or lint errors, and the build lists the routes `/`, `/events/[id]`, `/share/[token]`.
 
-- [ ] **Step 8: Manual parity check** (`npm run dev`, against the still-open v2.3.0 policies)
+- [ ] **Step 8: Manual parity check** (`npm run dev`, against the still-open v2.3.0 policies; compare with v2.4.0's page from `git show origin/main:index.html > /tmp/v240.html`)
 
 Get an event `id` and `share_token` from the Supabase table editor (`events`).
 
-1. Open `/events/<id>`. The data loads and the layout matches v2.3.0.
+1. Open `/events/<id>`. The data loads and the layout matches v2.4.0: cards with colour rails, the KEY box, icon buttons, and row tools on hover on desktop.
 2. Add a song and details. The new title or detail field is focused. Reorder songs and details, cycle colours, delete a detail and a song (each asks to confirm).
 3. Click Save. The button shows "Saving…", then "Saved". Reload: the changes are kept.
 4. Make an edit and try to close the tab. The browser warns about unsaved changes.
-5. Export PNG in light mode and in dark mode. The images match v2.3.0 output.
+5. Export PNG in light mode and in dark mode. The images match v2.4.0 output.
 6. Click Share. A toast says "Share link copied to clipboard". Open the copied link in a private window: it's read-only, and the Export PNG button in its header works.
 7. Open `/?share=<token>`. It redirects to `/share/<token>`.
 8. Open `/share/garbage` and `/events/not-a-uuid`. Both show a 404.
 9. Make Save fail. In DevTools > Network, set "Offline" and click Save: an error banner appears and the edits stay on the page. Go back online and Save: it succeeds and the banner disappears.
-10. At 375px width there is no horizontal scroll in the editor or the share view.
+10. At 375px width there is no page-level horizontal scroll in the editor or the share view. The song chips scroll sideways, and selecting a song keeps its chip in view.
 
 - [ ] **Step 9: Commit**
 
@@ -1128,7 +1171,7 @@ git commit -m "Port editor, PNG export and share view to Next.js"
 
 - [ ] **Step 2: Migration** — `supabase/migrations/002_auth_and_rls.sql`
 
-Running this ends anonymous saving. The old v2.3.0 page can then only show share links (it reads the table directly, so its share view stops working too). From here on, only the Next.js app works.
+Running this ends anonymous saving. The old v2.4.0 page can then only show share links (it reads the table directly, so its share view stops working too). From here on, only the Next.js app works.
 
 ```sql
 alter table public.events
@@ -1356,6 +1399,7 @@ git commit -m "Add Supabase Auth login, session proxy and owner-only RLS"
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Icon from "@/components/Icon";
 import { randomShareToken } from "@/lib/event";
 import { createClient } from "@/lib/supabase/client";
 
@@ -1377,7 +1421,7 @@ export function NewEventButton() {
 
   return (
     <button className="btn primary" type="button" onClick={create} disabled={busy}>
-      {busy ? "Creating…" : "＋ New event"}
+      {busy ? "Creating…" : <><Icon name="plus" />New event</>}
     </button>
   );
 }
@@ -1397,7 +1441,7 @@ export function DeleteEventButton({ id, name }: { id: string; name: string }) {
 
   return (
     <button className="icon-btn danger" type="button" title="Delete event" aria-label={`Delete ${name}`} onClick={remove}>
-      ⌫
+      <Icon name="trash" />
     </button>
   );
 }
@@ -1536,7 +1580,7 @@ git commit -m "Add events dashboard with create, open, delete and logout"
 - [ ] **Step 7: Manual checklist** (spec §6, items 1–11)
 
 Run every item in the spec's manual checklist on `npm run dev`. In addition:
-- **Double click:** double-click "＋ New event". Exactly one new event is created (Review Focus 3).
+- **Double click:** double-click "New event". Exactly one new event is created (Review Focus 3).
 - **Dashboard link with unsaved edits:** edit something, then click "← Dashboard". It asks first, and Cancel keeps you on the page with your edits (Review Focus 1).
 - **Second user:** while logged in as user B, open user A's `/events/<id>`. It shows a 404, and Save can't be reached (Review Focus 2).
 
@@ -1569,7 +1613,7 @@ Replace the single-file and JSON content with these sections. Keep the wording s
 
 - [ ] **Step 2: `changelog/v3.0.0_changelog.md`**
 
-Copy `changelog/v2.3.0_changelog.md`. Change the old "Current Release" heading to a v2.3.0 entry under "Previous Releases". Add at the top:
+Copy `changelog/v2.3.0_changelog.md`. Change the old "Current Release" heading to a v2.3.0 entry under "Previous Releases". `main` has no v2.4.0 changelog, so add a v2.4.0 entry above v2.3.0 that summarises commit `c3ccf1f`: phone-first "stage-ready" restyle, Fraunces + Plus Jakarta Sans, amber accent, theme follows the device, scrolling song chips, SVG icons, colour-rail cards, no logic changes. Then add at the top:
 
 ```markdown
 ## Current Release
@@ -1588,7 +1632,7 @@ Brief summary:
 - Events saved before v3.0.0 have no owner. Their share links keep working, but they can no longer be edited.
 ```
 
-Add `v3.0.0 ↓ Next.js rebuild, accounts, dashboard` to the "Release Evolution" block, and add to the Versioning Notes:
+Add `v2.4.0 ↓ Phone-first stage-ready redesign` and `v3.0.0 ↓ Next.js rebuild, accounts, dashboard` to the "Release Evolution" block, and add to the Versioning Notes:
 
 ```markdown
 - **v3.0.0:** major release: new framework, accounts, and URL structure.

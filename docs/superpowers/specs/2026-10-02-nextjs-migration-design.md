@@ -1,19 +1,19 @@
 # setlist.app — Next.js Migration, Auth & Dashboard (Design)
 
 **Date:** 2026-10-02
-**Baseline:** v2.3.0 (`main` @ `02555e1`)
+**Baseline:** v2.4.0 (`main` @ `c3ccf1f`, phone-first redesign)
 **Target version:** v3.0.0
 
 ## 1. Goal
 
-Move setlist.app from a single `index.html` to a Next.js (TypeScript) project, keeping every v2.3.0 feature and look, and add:
+Move setlist.app from a single `index.html` to a Next.js (TypeScript) project, keeping every v2.4.0 feature and look, and add:
 
 - user accounts (email + password, and Google sign-in) via Supabase Auth;
 - a dashboard where a signed-in user creates, opens and deletes their own events.
 
 ### Success criteria
 
-1. Everything in v2.3.0 works the same in Next.js: Event → Songs → Song Details (name, color, note), add/delete/reorder songs and details, color cycling, PNG export (light and dark), theme toggle, read-only share view, phone-width layout.
+1. Everything in v2.4.0 works the same in Next.js: Event → Songs → Song Details (name, color, note), add/delete/reorder songs and details, color cycling, PNG export (light and dark), theme toggle (follows the device until the user picks one), phone-width song chips and SVG icons, read-only share view, phone-width layout.
 2. Users can sign up and log in with email + password or Google, and see only their own events.
 3. A user cannot read, change or delete another user's event.
 4. Share links work while logged out, including links already sent in the old `?share=<token>` format.
@@ -51,7 +51,7 @@ Move setlist.app from a single `index.html` to a Next.js (TypeScript) project, k
 | `/events/[id]` | owner | The editor. **Save** and **Share** (copies the read-only link). |
 | `/share/[token]` | public | Read-only view of the event. |
 
-`proxy.ts` (Next.js 16's name for middleware) refreshes the Supabase session cookie on every request and redirects unauthenticated requests for `/dashboard` and `/events/*` to `/login`. Pages still check the user themselves; the proxy is a convenience, not the security boundary.
+`proxy.ts` (Next.js 16's name for middleware) refreshes the Supabase session cookie on every request and redirects unauthenticated requests for `/dashboard` and `/events/*` to `/login`. The proxy is a convenience, not the security boundary: RLS is. The dashboard and login pages also read the user; the editor page relies on RLS returning no row for a non-owner.
 
 **New event:** inserts an empty row (`event_name` null, `data = {"songs": []}`, new `share_token`) and navigates to `/events/<id>`.
 
@@ -65,7 +65,9 @@ Move setlist.app from a single `index.html` to a Next.js (TypeScript) project, k
 
 The browser calls Supabase directly (`@supabase/ssr` browser client). Row Level Security is the security boundary, so there are no API routes. Server components (dashboard, editor page, share page) load data with the `@supabase/ssr` server client.
 
-### Database migration — `supabase/migrations/001_auth_and_rls.sql`
+### Database migrations
+
+Split in two so phase 1 only adds things: `001_share_function.sql` (an `updated_at timestamptz not null default now()` column plus `get_shared_event`, run in phase 1) and `002_auth_and_rls.sql` (`user_id` plus owner policies, run in phase 2). Combined:
 
 ```sql
 alter table public.events
@@ -122,21 +124,23 @@ lib/
   supabase/client.ts      browser client
   supabase/server.ts      server client (cookies)
 proxy.ts
-supabase/migrations/001_auth_and_rls.sql
+supabase/migrations/001_share_function.sql, 002_auth_and_rls.sql
 .env.local.example        NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 ```
 
 ### Mapping from `index.html`
 
-| v2.3.0 | Next.js |
+| v2.4.0 | Next.js |
 |---|---|
 | `<style>` block | `app/globals.css` (verbatim; remove only dead selectors for removed elements) |
-| `uid`, `safeColor`, `normalize*`, `colors`, `blankState` | `lib/event.ts` |
+| `uid`, `safeColor`, `normalize*` (as `eventFromRow`), `colors`, `formatEventDate`, `randomShareToken` | `lib/event.ts` (the legacy single-song branch is dropped: only JSON import used it) |
+| SVG icon sprite + `ico()` | `components/Icon.tsx` (inline paths, no sprite) |
+| Google Fonts `<link>` (Fraunces, Plus Jakarta Sans) | Same `<link>` in `app/layout.tsx` |
 | `esc` | Not needed in React; kept inside `exportPng.ts` only if used there |
 | `render`, `renderMain`, `renderDetail`, `renderSidebarOnly`, `viewHeader`, delegated listeners | `EventEditor` (one `useState` event object + `activeSongId`) |
 | `addSong`, `deleteSong`, `moveSong`, `addDetail`, `moveDetail`, `deleteDetail`, `cycleDetailColor` | Functions inside `EventEditor` that return updated state |
 | `exportSongImage`, `wrapLines`, `roundRect`, `formatEventDate` | `lib/exportPng.ts` |
-| `getTheme`, `setTheme`, `initTheme`, `THEME_KEY` | `ThemeToggle` + inline script in `layout.tsx` |
+| `getTheme`, `setTheme`, `initTheme` (device preference until chosen), `THEME_KEY` | `ThemeToggle` + inline script in `layout.tsx` |
 | `saveEvent`, `loadFromUrl`, `loadEvent`, edit/share link helpers, save dialog | Replaced by the Save/Share flow and server-side page loading above |
 | `persist`, `load`, `supabase-config.js`, CDN script | Removed; env vars instead |
 | Reset button | Removed: the dashboard's **New event** replaces "start a new event" |
@@ -147,11 +151,11 @@ supabase/migrations/001_auth_and_rls.sql
 
 Each phase is one or more commits that leave the app working.
 
-1. **Scaffold + editor port.** `create-next-app` (TypeScript, App Router, ESLint, no Tailwind, no `src/`). Port CSS, `lib/event.ts`, `lib/exportPng.ts`, `EventEditor`, `ThemeToggle`, the share page and the editor page. At the end: v2.3.0 parity at `/events/[id]` and `/share/[token]` against the current (open-policy) database. Delete `index.html` and `supabase-config.js`.
-2. **Auth + dashboard.** Run the SQL migration, add the Supabase clients, `proxy.ts`, `/login`, `/auth/callback`, `/dashboard`, ownership-aware editor loading, legacy `?share=` redirect.
+1. **Scaffold + editor port.** `create-next-app` (TypeScript, App Router, ESLint, no Tailwind, no `src/`). Run `001_share_function.sql`. Port CSS, `lib/event.ts`, `lib/exportPng.ts`, `EventEditor`, `ThemeToggle`, the share page and the editor page. At the end: v2.4.0 parity at `/events/[id]` and `/share/[token]` against the current (open-policy) database. Delete `index.html` and `supabase-config.js`.
+2. **Auth + dashboard.** Run `002_auth_and_rls.sql`, add the Supabase clients, `proxy.ts`, `/login`, `/auth/callback`, `/dashboard`, ownership-aware editor loading, legacy `?share=` redirect.
 3. **Deploy.** Vercel project + env vars; Google OAuth client (Google Cloud Console) and Supabase provider settings; Supabase Site URL and redirect URLs for production and `localhost:3000`; run the manual checklist on production.
 
-The v2.3.0 GitHub Pages site (if still served) keeps working until phase 2's migration removes the open policies; after that it can no longer save. Cut over to Vercel right after phase 2.
+The v2.x site (if still served) keeps working until phase 2's migration removes the open policies; after that it can no longer save. Cut over to Vercel right after phase 2.
 
 ## 5. Error handling
 
