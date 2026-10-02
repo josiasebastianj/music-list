@@ -3,9 +3,14 @@ alter table public.events
 
 create index if not exists events_user_id_idx on public.events (user_id);
 
-drop policy if exists "anon insert" on public.events;
-drop policy if exists "anon update" on public.events;
-drop policy if exists "anon select" on public.events;
+-- remove every existing policy (the v2.3.0 open ones, whatever their names) before adding the owner-only set
+do $$
+declare p record;
+begin
+  for p in select policyname from pg_policies where schemaname = 'public' and tablename = 'events' loop
+    execute format('drop policy %I on public.events', p.policyname);
+  end loop;
+end $$;
 
 alter table public.events enable row level security;
 
