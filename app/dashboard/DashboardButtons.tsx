@@ -7,7 +7,6 @@ import { randomShareToken } from "@/lib/event";
 import { createClient } from "@/lib/supabase/client";
 
 export function NewEventButton() {
-  const router = useRouter();
   const [busy, setBusy] = useState(false);
 
   async function create() {
@@ -19,7 +18,8 @@ export function NewEventButton() {
       alert(`Could not create event: ${error.message}`);
       return;
     }
-    router.push(`/events/${id}`);
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- full page load so beforeunload guards unsaved edits on Back
+    window.location.assign(`/events/${id}`);
   }
 
   return (
@@ -53,7 +53,7 @@ export function LogoutButton() {
   const router = useRouter();
 
   async function logout() {
-    await createClient().auth.signOut();
+    await createClient().auth.signOut({ scope: "local" });
     router.push("/login");
     router.refresh();
   }

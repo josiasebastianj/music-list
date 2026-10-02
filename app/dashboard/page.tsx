@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -40,10 +39,10 @@ export default async function DashboardPage() {
               const name = e.event_name || "Untitled Event";
               return (
                 <li key={e.id} className="dash-item">
-                  <Link href={`/events/${e.id}`} className="dash-link">
+                  <a href={`/events/${e.id}`} className="dash-link">
                     <span className="dash-name">{name}</span>
                     <span className="dash-meta">{[formatEventDate(e.event_date ?? ""), songCount(e.data)].filter(Boolean).join(" · ")}</span>
-                  </Link>
+                  </a>
                   <DeleteEventButton id={e.id} name={name} />
                 </li>
               );

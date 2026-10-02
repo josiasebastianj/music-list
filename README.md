@@ -24,18 +24,22 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 
-3. Run the two SQL files in `supabase/migrations/`, in order, from the Supabase **SQL Editor**.
+3. Run the two SQL files in `supabase/migrations/` from the Supabase **SQL Editor**, `001` now and `002` only at switch-over.
 
    Use the SQL Editor on purpose. It has no signed-in user, so `auth.uid()` is null when the `user_id` column default fills your existing rows. That is how old events keep `user_id = null`.
+
+   **3a. Run `001_share_function.sql` now.** It only adds things, so v2.x keeps working.
 
    - `001_share_function.sql` adds the `updated_at` column and the `get_shared_event` function.
      Before you run it, check the column types:
 
      ```sql
-     select column_name, data_type from information_schema.columns where table_name = 'events';
+     select column_name, data_type from information_schema.columns where table_name = 'events' and table_schema = 'public';
      ```
 
      The function has a `returns table (...)` clause. If `event_date` is not `date`, or `event_name` is not `text`, change the types in that clause to match.
+   **3b. Run `002_auth_and_rls.sql` only at switch-over.** It ends v2.x saving and v2.x share views (see "Switching over from v2.x" below).
+
    - `002_auth_and_rls.sql` adds `user_id`, removes every existing policy on `events`, turns on Row Level Security and adds four owner-only policies.
      After you run it, check the policies:
 
@@ -50,6 +54,7 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 4. Set up sign-in in Supabase and Google:
 
    - **Email:** Authentication > Providers > Email. Turn it on and turn on "Confirm email".
+   - **Email limit:** Supabase's built-in email sender only sends a few confirmation emails per hour. Set up custom SMTP (Authentication > SMTP Settings) before a team signs up, or stagger sign-ups.
    - **URLs:** Authentication > URL Configuration. Set Site URL to `http://localhost:3000` and add the Redirect URL `http://localhost:3000/auth/callback`.
    - **Google:** in Google Cloud Console, create an OAuth client ID (Web application). Set the authorised redirect URI to `https://<project-ref>.supabase.co/auth/v1/callback`. Then open Authentication > Providers > Google in Supabase, turn it on and paste the Client ID and Secret.
 
@@ -127,6 +132,16 @@ Deploy on Vercel.
 1. Import the GitHub repo. Vercel detects Next.js.
 2. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` for Production and Preview, then deploy.
 3. In Supabase, open Authentication > URL Configuration. Set Site URL to `https://<vercel-domain>` and add the Redirect URL `https://<vercel-domain>/auth/callback`. Keep the localhost entries for development.
+
+### Switching over from v2.x
+
+Share links already sent point at the old v2.x host. Before running `002`, replace the old host's page with a redirect stub, for example an `index.html` containing:
+
+```html
+<!doctype html><meta charset="utf-8"><script>location.replace("https://YOUR-VERCEL-DOMAIN/" + location.search + location.hash)</script>
+```
+
+`/?share=<token>` on the new app redirects to `/share/<token>`. If the old host is GitHub Pages serving this repo's `main` branch, merging v3.0.0 deletes the old `index.html`. In that case add the stub (with the real domain) to the branch GitHub Pages serves, before or at the merge. Vercel serves the Next.js app and ignores a root `index.html`.
 
 ## History
 

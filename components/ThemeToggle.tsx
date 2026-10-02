@@ -29,7 +29,7 @@ export default function ThemeToggle() {
   return (
     <button className="theme-top-toggle" type="button" aria-label="Switch theme" onClick={toggle}>
       <span className="theme-icon"><Icon name={theme === "dark" ? "moon" : "sun"} /></span>
-      <span>{theme === "dark" ? "Dark Mode" : "Light Mode"}</span>
+      <span id="themeLabel">{theme === "dark" ? "Dark Mode" : "Light Mode"}</span>
     </button>
   );
 }

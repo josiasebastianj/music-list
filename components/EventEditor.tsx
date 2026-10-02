@@ -28,7 +28,10 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
 
   useEffect(() => {
     if (!dirty) return;
-    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
@@ -129,7 +132,11 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
       .single();
     if (error) {
       setSaving("idle");
-      setError(`Could not save event: ${error.message}`);
+      setError(
+        error.code === "PGRST116"
+          ? "You're signed out, or this event isn't yours. Log in again in another tab, then press Save — your changes are still here."
+          : `Could not save event: ${error.message}`,
+      );
       return;
     }
     setError(null);
@@ -156,11 +163,12 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
       <Link
         className="btn"
         href="/dashboard"
+        aria-label="Dashboard"
         onClick={(e) => {
           if (dirty && !confirm("Leave without saving your changes?")) e.preventDefault();
         }}
       >
-        ← Dashboard
+        ←<span className="btn-label"> Dashboard</span>
       </Link>
       <button className="btn primary" type="button" onClick={save} disabled={saving === "saving"}>
         {saving === "saving" ? "Saving…" : saving === "saved" ? "Saved" : "Save"}
