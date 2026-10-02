@@ -24,6 +24,7 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
   const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
   const focusId = useRef<string | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const revision = useRef(0);
 
   useEffect(() => {
     if (!dirty) return;
@@ -60,6 +61,7 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
   const index = song ? event.songs.indexOf(song) : -1;
 
   function update(next: SetlistEvent) {
+    revision.current++;
     setEvent(next);
     setDirty(true);
   }
@@ -117,6 +119,7 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
 
   async function save() {
     if (!eventId) return;
+    const savedRevision = revision.current;
     setSaving("saving");
     const { error } = await createClient()
       .from("events")
@@ -130,7 +133,7 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
       return;
     }
     setError(null);
-    setDirty(false);
+    if (revision.current === savedRevision) setDirty(false);
     setSaving("saved");
     setTimeout(() => setSaving("idle"), 1800);
   }
