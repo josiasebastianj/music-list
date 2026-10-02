@@ -1,13 +1,10 @@
 import { redirect } from "next/navigation";
-import AppShell from "@/components/AppShell";
-import ThemeToggle from "@/components/ThemeToggle";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ share?: string }> }) {
   const { share } = await searchParams;
   if (share) redirect(`/share/${encodeURIComponent(share)}`);
-  return (
-    <AppShell actions={<ThemeToggle />}>
-      <main className="dash">Open an event at /events/&lt;id&gt;.</main>
-    </AppShell>
-  );
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  redirect(user ? "/dashboard" : "/login");
 }

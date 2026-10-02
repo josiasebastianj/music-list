@@ -153,6 +153,15 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
     <ThemeToggle />
   ) : (
     <>
+      <Link
+        className="btn"
+        href="/dashboard"
+        onClick={(e) => {
+          if (dirty && !confirm("Leave without saving your changes?")) e.preventDefault();
+        }}
+      >
+        ← Dashboard
+      </Link>
       <button className="btn primary" type="button" onClick={save} disabled={saving === "saving"}>
         {saving === "saving" ? "Saving…" : saving === "saved" ? "Saved" : "Save"}
       </button>
