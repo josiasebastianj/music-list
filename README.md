@@ -23,6 +23,7 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+   - `SHARED_LOGIN_EMAIL`: the email of the shared tester account (see step 4). It stays on the server and is never sent to the browser.
 
 3. Run the two SQL files in `supabase/migrations/` from the Supabase **SQL Editor**, `001` now and `002` only at switch-over.
 
@@ -51,7 +52,14 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 
    **Order matters.** `001` only adds things, so the old v2.x page keeps working after it. `002` ends anonymous saving. Once it runs, the old v2.x page stops working: it can no longer save, and its share view stops too, because the open read policy is gone. Only this app works from then on. Run `002` when you are ready to switch over.
 
-4. Set up sign-in in Supabase and Google:
+4. Set up sign-in. **For now the app is in testing mode:** everyone logs in with one shared password. There is no sign-up and no Google sign-in.
+
+   - **Create the shared account:** Authentication > Users > Add user. Use the email from `SHARED_LOGIN_EMAIL`, set the shared password and tick "Auto confirm user".
+   - **Block sign-ups:** Authentication > Sign In / Providers. Turn off "Allow new users to sign up", so nobody can create accounts through the API.
+   - **What testers get:** every tester uses the same account, so they all see and edit the same events.
+   - **Revoking access:** change the password in Supabase. Everyone, including you, has to log in again.
+
+   **Later, for real accounts:** restore the email and Google `app/login/LoginForm.tsx` from git history, delete `app/login/actions.ts` and the `SHARED_LOGIN_EMAIL` variable, and turn sign-ups back on. Then set up:
 
    - **Email:** Authentication > Providers > Email. Turn it on and turn on "Confirm email".
    - **Email limit:** Supabase's built-in email sender only sends a few confirmation emails per hour. Set up custom SMTP (Authentication > SMTP Settings) before a team signs up, or stagger sign-ups.
@@ -83,8 +91,8 @@ On a fresh clone, `npx tsc --noEmit` needs `npm run dev`, `npm run build` or `np
 | Route | Access | Purpose |
 |---|---|---|
 | `/` | everyone | Redirects to `/dashboard` or `/login`. Old `/?share=<token>` links redirect to `/share/<token>`. |
-| `/login` | logged out | Sign in, sign up, or continue with Google |
-| `/auth/callback` | - | Finishes Google sign-in and email confirmation |
+| `/login` | logged out | Shared-password login (testing mode) |
+| `/auth/callback` | - | Finishes Google sign-in and email confirmation (unused in testing mode) |
 | `/dashboard` | logged in | Your events: new, open, delete, log out |
 | `/events/[id]` | owner | The editor |
 | `/share/[token]` | public | Read-only view of an event |
@@ -130,7 +138,7 @@ The app also has `components/AppShell.tsx`, `components/Icon.tsx`, `app/login/Lo
 Deploy on Vercel.
 
 1. Import the GitHub repo. Vercel detects Next.js.
-2. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` for Production and Preview, then deploy.
+2. Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `SHARED_LOGIN_EMAIL` for Production and Preview, then deploy.
 3. In Supabase, open Authentication > URL Configuration. Set Site URL to `https://<vercel-domain>` and add the Redirect URL `https://<vercel-domain>/auth/callback`. Keep the localhost entries for development.
 
 ### Switching over from v2.x
