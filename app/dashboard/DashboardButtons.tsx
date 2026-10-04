@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Icon from "@/components/Icon";
 import { randomShareToken } from "@/lib/event";
 import { createClient } from "@/lib/supabase/client";
@@ -26,6 +26,35 @@ export function NewEventButton() {
     <button className="btn primary" type="button" onClick={create} disabled={busy}>
       {busy ? "Creating…" : <><Icon name="plus" />New event</>}
     </button>
+  );
+}
+
+export function ShareEventButton({ token, name }: { token: string; name: string }) {
+  const [toast, setToast] = useState(false);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(false), 2200);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  async function share() {
+    const url = `${location.origin}/share/${encodeURIComponent(token)}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setToast(true);
+    } catch {
+      prompt("Copy this read-only link:", url);
+    }
+  }
+
+  return (
+    <>
+      <button className="icon-btn" type="button" title="Copy share link" aria-label={`Copy share link for ${name}`} onClick={share}>
+        <Icon name="share" />
+      </button>
+      <div className={`toast${toast ? " show" : ""}`} role="status" aria-live="polite">{toast && "Share link copied to clipboard"}</div>
+    </>
   );
 }
 

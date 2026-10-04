@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import AppShell from "@/components/AppShell";
+import Icon from "@/components/Icon";
 import ThemeToggle from "@/components/ThemeToggle";
 import { formatEventDate } from "@/lib/event";
 import { createClient } from "@/lib/supabase/server";
-import { DeleteEventButton, LogoutButton, NewEventButton } from "./DashboardButtons";
+import { DeleteEventButton, LogoutButton, NewEventButton, ShareEventButton } from "./DashboardButtons";
 
 function songCount(data: unknown) {
   const songs = (data as { songs?: unknown } | null)?.songs;
@@ -18,7 +19,7 @@ export default async function DashboardPage() {
 
   const { data: events, error } = await supabase
     .from("events")
-    .select("id,event_name,event_date,data,updated_at")
+    .select("id,event_name,event_date,data,share_token,updated_at")
     .order("updated_at", { ascending: false });
 
   return (
@@ -43,6 +44,10 @@ export default async function DashboardPage() {
                     <span className="dash-name">{name}</span>
                     <span className="dash-meta">{[formatEventDate(e.event_date ?? ""), songCount(e.data)].filter(Boolean).join(" · ")}</span>
                   </a>
+                  <a href={`/events/${e.id}`} className="icon-btn" title="Edit event" aria-label={`Edit ${name}`}>
+                    <Icon name="edit" />
+                  </a>
+                  {e.share_token && <ShareEventButton token={e.share_token} name={name} />}
                   <DeleteEventButton id={e.id} name={name} />
                 </li>
               );
