@@ -4,6 +4,14 @@
 **Baseline:** v2.4.0 (`main` @ `c3ccf1f`, phone-first redesign)
 **Target version:** v3.0.0
 
+> **Implementation status (2026-10-05).** Built on `revamp-nextjs`; both migrations have been run. Differences from this design:
+> - **Login is in testing mode:** one shared password for one shared Supabase account (`app/login/actions.ts`, `SHARED_LOGIN_EMAIL`), sign-ups off. The email + password and Google login below was built and can be restored (README, "Switching to real accounts").
+> - **Dashboard rows** also have **Edit** and **Share** buttons next to Delete.
+> - **The editor opens with a full page load** from the dashboard, so the browser's unsaved-changes warning also covers the Back button.
+> - **`002_auth_and_rls.sql` drops every existing policy** on `events`, not only named ones (the live v2.3.0 policies were named `anon_insert`, `anon_update`, `anon_select`).
+> - **Unexpected database errors** on the event and share pages show an error page instead of a 404.
+> - Not deployed to Vercel yet.
+
 ## 1. Goal
 
 Move setlist.app from a single `index.html` to a Next.js (TypeScript) project, keeping every v2.4.0 feature and look, and add:
