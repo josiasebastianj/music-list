@@ -1,362 +1,183 @@
-# Song Structure Timeline (setlist.app)
+# setlist.app
 
-**Version:** 1.4.7-STABLE
+**Version:** 3.0.0
 
-Song Structure Timeline is a single-page browser app for building a song map before a worship service. You enter the song's details, list its sections in order (Intro, Verse, Chorus, Bridge, and so on), add a performance note to each section, and then export the result as a PNG to share with the team or as a JSON file to reuse later.
+setlist.app builds worship setlists. An Event holds Songs, and each Song holds Song Details (a name, a colour and a note). You can export a song as a PNG and share a read-only link to an event. A dashboard lists your events.
 
-The whole app is one HTML file with no build step, no dependencies and no server. The UI is written in Indonesian.
+It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 
----
+## Current status
 
-## Table of contents
+- **Testing mode.** Everyone logs in with one shared password to one shared Supabase account. There is no sign-up and no Google sign-in. All testers see and edit the same events. See "Switching to real accounts" to change this.
+- **Database.** Both migrations (`001` and `002`) have been run on the project's Supabase database.
+- **Hosting.** Not deployed to Vercel yet. Run it locally with `npm run dev`.
+- **Branch.** The app lives on the `revamp-nextjs` branch. `main` still holds the old single-file v2.4.0 page, which can no longer save because `002` removed its open access policies.
 
-1. [Quick start](#quick-start)
-2. [Features](#features)
-3. [Using the app](#using-the-app)
-4. [Data model](#data-model)
-5. [Persistence and migration](#persistence-and-migration)
-6. [JSON export and import](#json-export-and-import)
-7. [PNG export](#png-export)
-8. [Architecture](#architecture)
-9. [Styling and responsive layout](#styling-and-responsive-layout)
-10. [Version history](#version-history)
-11. [Known limitations](#known-limitations)
-12. [Contributing and preservation rules](#contributing-and-preservation-rules)
-13. [Repository layout](#repository-layout)
+## Requirements
 
----
+- Node 22.18 or newer
+- A Supabase project
 
-## Quick start
+## Setup
 
-No installation is needed.
+1. Install dependencies:
 
-1. Clone or download the repository.
-2. Open `index.html` in a modern browser (Chrome, Edge, Firefox or Safari).
+   ```bash
+   npm install
+   ```
 
-To serve it locally instead, for example to test on a phone on the same network:
+2. Copy `.env.local.example` to `.env.local` and fill in your project's values:
 
-```bash
-# Python 3
-python -m http.server 8000
-# then open http://localhost:8000
-```
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+   - `SHARED_LOGIN_EMAIL`: the email of the shared tester account (see step 4). It stays on the server and is never sent to the browser.
 
-The app works offline once it is loaded. Any static host (GitHub Pages, Netlify, an S3 bucket) can serve it as-is.
+3. Run the SQL files in `supabase/migrations/` from the Supabase **SQL Editor**, in order.
 
-**Browser requirements:** the app uses `structuredClone`, optional chaining (`?.`), `localStorage`, `FileReader`, `Blob` and the Canvas 2D API, so it needs a browser released in 2022 or later.
+   Use the SQL Editor on purpose. It has no signed-in user, so `auth.uid()` is null when the `user_id` column default fills existing rows. That is how events from before v3.0.0 keep `user_id = null`.
 
----
+   - **`001_share_function.sql`** adds the `updated_at` column and the `get_shared_event` function. Before you run it, check the column types:
 
-## Features
+     ```sql
+     select column_name, data_type from information_schema.columns where table_name = 'events' and table_schema = 'public';
+     ```
 
-| Feature | Description |
-|---|---|
-| Song metadata | Song title, base key (*Kunci Dasar*), service date (*Tanggal Ibadah*) and service title (*Judul Ibadah*). |
-| Song sections | An ordered list of sections. Each has a name, an accent color and free-text notes. |
-| Reordering | Up/down arrows move a section one position. The first section can't move up and the last can't move down. |
-| Deletion | Deletes a section after a confirmation prompt. |
-| Auto-save | Every edit is saved to the browser's `localStorage` immediately. |
-| JSON export/import | Saves the song as `song-structure.json` and loads it back. |
-| PNG export | Draws a high-resolution image of the song map in the browser. |
-| Reset | Clears everything to a blank song with no sections. |
-| Responsive UI | A two-column card layout on desktop that stacks vertically on narrow screens. |
+     The function has a `returns table (...)` clause. If `event_date` is not `date`, or `event_name` is not `text`, change the types in that clause to match. Afterwards, check that the function exists:
 
----
+     ```sql
+     select proname from pg_proc where proname = 'get_shared_event';
+     ```
+
+   - **`002_auth_and_rls.sql`** adds `user_id`, removes every existing policy on `events`, turns on Row Level Security and adds four owner-only policies. Afterwards, check the policies:
+
+     ```sql
+     select policyname, roles from pg_policies where tablename = 'events';
+     ```
+
+     You should see exactly four, all for `{authenticated}`: `own select`, `own insert`, `own update` and `own delete`.
+
+   If you are moving from a live v2.x site, read "Switching over from v2.x" before running `002`.
+
+4. Set up the shared tester login (testing mode):
+
+   - **Create the shared account:** Authentication > Users > Add user. Use the email from `SHARED_LOGIN_EMAIL`, set the shared password and tick "Auto confirm user".
+   - **Block sign-ups:** Authentication > Sign In / Providers. Turn off "Allow new users to sign up", so nobody can create accounts through the API.
+   - **Revoking access:** change the password in Supabase. Everyone, including you, has to log in again.
+
+5. Start the dev server:
+
+   ```bash
+   npm run dev
+   ```
+
+   Open http://localhost:3000 and log in with the shared password.
 
 ## Using the app
 
-### Header
+- **Dashboard:** lists events (name, date, song count), newest first. Each row has **Edit** (or click the title), **Share** (copies the read-only link) and **Delete**. **New event** creates an empty event and opens it.
+- **Editor:** add, reorder and delete songs and song details, cycle colours, export a song as PNG. **Save** stores the event. **Share** copies the read-only link. **← Dashboard** goes back. The browser warns before you leave with unsaved changes, including with the Back button.
+- **Share link:** `/share/<token>` shows the event read-only to anyone with the link, without logging in. Old `/?share=<token>` links redirect there.
 
-| UI element | Indonesian label | Action |
+## Scripts
+
+| Script | What it does |
+|---|---|
+| `npm run dev` | Starts the dev server |
+| `npm run build` | Builds for production |
+| `npm run start` | Runs the production build |
+| `npm run lint` | Runs ESLint |
+| `npm test` | Runs `lib/event.test.ts` with Node's test runner |
+
+On a fresh clone, `npx tsc --noEmit` needs `npm run dev`, `npm run build` or `npx next typegen` to have run first. `next-env.d.ts` and `.next/types` are generated and git-ignored.
+
+## Routes
+
+| Route | Access | Purpose |
 |---|---|---|
-| Large title input | *Judul lagu* (placeholder) | Song title |
-| Text input | **KUNCI DASAR** | Base key, e.g. `G` |
-| Date picker | **TANGGAL IBADAH** | Service date |
-| Text input | **JUDUL IBADAH** | Service title, e.g. *Ibadah Minggu Pagi* |
-| Button | **Export JSON** | Download the current data as JSON |
-| Button | **Export Gambar** | Download a PNG image |
-| Button | **Import JSON** | Load a previously exported JSON file |
-| Button (red) | **Reset** | Clear all data (asks for confirmation) |
+| `/` | everyone | Redirects to `/dashboard` or `/login`. Old `/?share=<token>` links redirect to `/share/<token>`. |
+| `/login` | logged out | Shared-password login (testing mode) |
+| `/auth/callback` | - | Finishes Google sign-in and email confirmation (unused in testing mode) |
+| `/dashboard` | logged in | Your events: new, edit, share, delete, log out |
+| `/events/[id]` | owner | The editor |
+| `/share/[token]` | public | Read-only view of an event |
 
-### Song Details
-
-Each section is shown as a card with four parts:
+## Project layout
 
 ```
-┌─┬──────────────────┬──────────────────────────────────────┬────┐
-│▌│ ● Section name   │ Notes for this section...            │ ↑  │
-│▌│                  │                                      │ 🗑 │
-│▌│                  │                                      │ ↓  │
-└─┴──────────────────┴──────────────────────────────────────┴────┘
- accent  identity           notes (textarea)                 tools
+app/
+  layout.tsx                  html shell, inline theme script (no flash), fonts
+  globals.css                 styles (v2.4.0 CSS + dashboard/login additions)
+  page.tsx                    redirect logic (+ legacy ?share=)
+  login/page.tsx              redirects to /dashboard when already logged in
+  login/LoginForm.tsx         password-only form (testing mode)
+  login/actions.ts            server action: signs in to the shared account
+  auth/callback/route.ts      OAuth / email-confirmation code exchange (unused in testing mode)
+  dashboard/page.tsx          server: lists events
+  dashboard/DashboardButtons.tsx  New event, Share, Delete, Log out
+  events/[id]/page.tsx        server: load row (RLS) -> 404, error page or <EventEditor>
+  share/[token]/page.tsx      server: rpc get_shared_event -> 404, error page or <EventEditor readOnly>
+components/
+  AppShell.tsx                top bar, page frame, footer
+  EventEditor.tsx             sidebar + song workspace; edit and read-only modes
+  Icon.tsx                    SVG icons
+  ThemeToggle.tsx             light/dark switch
+lib/
+  event.ts                    types (Event, Song, Section), eventFromRow, safeColor, colors, formatEventDate, randomShareToken
+  event.test.ts               runnable check: node --test
+  exportPng.ts                PNG export
+  supabase/client.ts          browser client
+  supabase/server.ts          server client (cookies)
+proxy.ts                      session refresh + login redirect
+supabase/migrations/          001_share_function.sql, 002_auth_and_rls.sql
+.env.local.example            NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, SHARED_LOGIN_EMAIL
 ```
 
-- **Accent bar and dot:** the section's color. It is stored with the section and also used in the PNG export.
-- **Section name:** edit it in place by clicking it.
-- **Notes:** a resizable textarea for performance cues ("Jaga ruang untuk vocal", "Tunggu cue final", and so on).
-- **Tools:** move up (↑), delete (🗑) and move down (↓).
+## Security model
 
-**＋ Tambah Song Detail** adds a new section named "New Section" at the end of the list. It gets the next color from the built-in palette, and its name field is focused and selected so you can type straight away.
+- Row Level Security makes events owner-only. A signed-in user can read, change and delete only rows where `user_id = auth.uid()`. Logged-out visitors can't read the table at all.
+- In testing mode, everyone shares one account, so everyone with the password can see and change every event that account owns. Sign-ups are turned off in Supabase.
+- Share links go through the `get_shared_event(token)` function. It returns the name, date and data for one share token, and no id or owner. Anyone with the link can read that event, and nobody can change it.
+- The app uses only the publishable key. Never put the `service_role` or secret key in this app.
+- `proxy.ts` refreshes the session cookie and sends logged-out visitors to `/login`. That is a convenience. RLS is the security boundary.
+- Events saved before v3.0.0 have `user_id = null`. Their share links still work, but nobody can edit them, and they don't appear on the dashboard.
 
-### First run
+## Troubleshooting
 
-On first launch, or when nothing is stored, the app loads an example song with nine sections: Intro, Verse 1, Chorus 1, Intro / Turn, Verse 2, Chorus 2, Bridge, Final Chorus and Outro. Each comes with sample Indonesian notes.
+- **"new row violates row-level security policy" when creating an event:** `002_auth_and_rls.sql` hasn't been run. The v2.3.0 policies only allow the `anon` role, and a logged-in user is `authenticated`. Run `002`.
+- **Share links show an error page ("Could not find the function public.get_shared_event"):** the function from `001` doesn't exist. Re-run the `create function` and `grant` statements from `001_share_function.sql`, then run `notify pgrst, 'reload schema';` so the API sees it.
+- **"Wrong password." on login:** the password doesn't match the shared account, or `SHARED_LOGIN_EMAIL` doesn't match its email.
+- **Dev console: "Encountered a script tag while rendering React component":** harmless. On 404 and error pages, Next re-renders the root layout in the browser during development, and React warns about the theme script, which already ran from the server HTML.
 
-### Reset
+## Switching to real accounts
 
-**Reset** asks *"Reset semua data ke kondisi awal?"*. If you confirm, it:
+1. Restore the email and Google `app/login/LoginForm.tsx` from git history (commit `6617183`), delete `app/login/actions.ts` and the `SHARED_LOGIN_EMAIL` variable.
+2. In Supabase, turn sign-ups back on and set up:
+   - **Email:** Authentication > Providers > Email. Turn it on and turn on "Confirm email".
+   - **Email limit:** Supabase's built-in email sender only sends a few confirmation emails per hour. Set up custom SMTP (Authentication > SMTP Settings) before a team signs up, or stagger sign-ups.
+   - **URLs:** Authentication > URL Configuration. Set Site URL to `http://localhost:3000` and add the Redirect URL `http://localhost:3000/auth/callback`.
+   - **Google:** in Google Cloud Console, create an OAuth client ID (Web application). Set the authorised redirect URI to `https://<project-ref>.supabase.co/auth/v1/callback`. Then open Authentication > Providers > Google in Supabase, turn it on and paste the Client ID and Secret.
+3. Events owned by the shared account stay with it. Move them to a real account with an `update public.events set user_id = '<new user id>' where user_id = '<shared account id>';` in the SQL Editor if needed.
 
-1. replaces the state with a blank state (all metadata empty, no sections);
-2. saves that blank state to `localStorage`;
-3. re-renders the UI.
+## Deploying
 
-Reset is a **clear current work** operation. It does **not** restore the example template.
+Deploy on Vercel.
 
----
+1. Import the GitHub repo. Vercel detects Next.js.
+2. Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `SHARED_LOGIN_EMAIL` for Production and Preview, then deploy.
+3. For real accounts only: in Supabase, open Authentication > URL Configuration. Set Site URL to `https://<vercel-domain>` and add the Redirect URL `https://<vercel-domain>/auth/callback`. Keep the localhost entries for development.
 
-## Data model
+### Switching over from v2.x
 
-The application state is a plain object:
+Share links already sent point at the old v2.x host. Replace the old host's page with a redirect stub, for example an `index.html` containing:
 
-```js
-{
-  title: "",          // Song title
-  baseKey: "",        // Musical base key, e.g. "G"
-  serviceDate: "",    // ISO date string "YYYY-MM-DD" from <input type="date">
-  serviceTitle: "",   // Service/event title
-  sections: [
-    {
-      name: "Verse 1",      // Section label
-      color: "#18d47b",     // Accent color (hex)
-      note: "Jaga ruang untuk vocal. Jangan terlalu ramai."
-    }
-  ]
-}
+```html
+<!doctype html><meta charset="utf-8"><script>location.replace("https://YOUR-VERCEL-DOMAIN/" + location.search + location.hash)</script>
 ```
 
-- `sections` is **ordered**. Its order is the song's performance order.
-- The accent palette used when adding sections is:
-  `#3182f6, #18d47b, #ff9b2f, #14cbe6, #18d47b, #ff9b2f, #ef4e9b, #ffad32, #9747ff`
-  (it cycles by section index).
-- **Removed field:** `teamNotes` ("Catatan untuk Team") was removed in 1.4.7. Older saved or imported data may still contain it, but the current UI and export ignore it.
+`/?share=<token>` on the new app redirects to `/share/<token>`. If the old host is GitHub Pages serving this repo's `main` branch, merging v3.0.0 deletes the old `index.html`. In that case add the stub (with the real domain) to the branch GitHub Pages serves, before or at the merge. Vercel serves the Next.js app and ignores a root `index.html`.
 
----
+On this project, `002` has already run, so the old v2.x page can't save or show share links until the stub points at the new app.
 
-## Persistence and migration
+## History
 
-All data stays in the browser's `localStorage`. Nothing is sent to a server.
-
-| Constant | Key | Role |
-|---|---|---|
-| `KEY` | `songStructureTimeline_v1_4_2` | Current storage key. It keeps its old name on purpose so existing saved data still loads. |
-| `PREVIOUS_KEY` | `songStructureTimeline_v1_4_1` | Migrated from if found |
-| `PREVIOUS_KEY_2` | `songStructureTimeline_v1_3_0` | Migrated from if found |
-
-On startup, `load()` tries these sources in order:
-
-1. **Current key.** Used as-is if it contains a `sections` array.
-2. **v1.4.1 key.** Title, metadata and sections are mapped into the current shape and written to the current key.
-3. **v1.3.0 key.** Title and sections are migrated. Metadata fields start empty.
-4. **Fallback.** A clone of the built-in example song.
-
-During migration each section is normalized to `{ name, color, note }`, with defaults of `"Untitled"`, `#3182f6` and `""`.
-
-Any change (typing, adding, moving, deleting, importing, resetting) calls `persist()` right away, so there is no Save button.
-
-> Data is tied to one browser and origin. Clearing site data, using a private window, or opening the file from a different path or host starts with a separate, empty store. Use **Export JSON** for backups and for moving songs between devices.
-
----
-
-## JSON export and import
-
-### Export
-
-**Export JSON** serializes the state with `JSON.stringify(state, null, 2)` and downloads it as **`song-structure.json`**.
-
-### Import
-
-**Import JSON** opens a hidden file picker that accepts `.json` files. The app then:
-
-1. reads the file with `FileReader`;
-2. parses it as JSON;
-3. checks that `sections` is an array, and rejects the file otherwise;
-4. rebuilds each section as `{ name, color, note }` with defaults;
-5. saves and re-renders.
-
-An invalid file shows the alert **"File JSON tidak valid."** and leaves the current data unchanged.
-
-> **Schema note:** treat the JSON structure as the app's data format. If a future version changes the schema, add migration logic so existing exported files keep working.
-
----
-
-## PNG export
-
-**Export Gambar** draws the song map with the HTML Canvas 2D API, entirely in the browser.
-
-**Canvas geometry**
-
-- Logical width **1200px**, rendered at **2× scale**, so the file is 2400px wide.
-- Padding 60px. The gap between section cards is 14px.
-- The height is **calculated from the content**. Long notes make the image taller, with a minimum of 600 logical px.
-
-**Rendering order**
-
-1. Dark vertical gradient background (`#102033` → `#05090f` → `#03070c`) with a soft blue radial glow behind the header.
-2. **Song title**: 800 weight, 54px, wrapped to at most 2 lines.
-3. **Service line**: a calendar icon followed by `Service Title • DD Month YYYY`. The date uses the `id-ID` locale, for example *27 September 2026*.
-4. **Subtitle**: a document icon and "Peta lagu".
-5. **Key badge** in the top-right corner: a "KUNCI DASAR" label above the key in large type, or "—" if the key is empty.
-6. A divider and the **SONG DETAILS** label.
-7. **One card per section**: accent bar, colored dot, section name, a vertical divider, then the wrapped notes.
-
-**Typography (v1.4.7)**
-
-| Element | Font |
-|---|---|
-| Section name | 700, **24px**, at most 2 lines, 29px line height |
-| Section notes | 500, **22px**, 32px line height |
-
-Text wrapping (`wrapLines`) breaks on words, keeps explicit line breaks, and splits very long words character by character when they don't fit.
-
-The image is downloaded as **`<Song Title>.png`**.
-
----
-
-## Architecture
-
-Everything lives in `index.html`: the markup, a `<style>` block and a single IIFE `<script>`.
-
-**Technologies:** HTML5, CSS3 (custom properties, grid, flexbox, media queries), vanilla JavaScript (ES2020+), DOM APIs, Canvas 2D, `localStorage`, `FileReader`, `Blob` / `URL.createObjectURL`, and download links (`<a download>`).
-
-It uses no framework (React, Vue and so on), no bundler and no backend.
-
-### Key functions
-
-| Function | Responsibility |
-|---|---|
-| `load()` | Reads state from `localStorage`, runs migrations, and falls back to the example song |
-| `persist()` | Writes `state` to `localStorage` under `KEY` |
-| `esc(s)` | HTML-escapes `& < > " '` for user text placed into generated markup |
-| `render()` | Fills the header inputs and rebuilds every section card and the add button |
-| `addSection()` | Adds a new section, saves, re-renders and focuses the new name field |
-| `moveSection(i, dir)` | Swaps a section with its neighbour (`dir` is `-1` or `+1`) |
-| `deleteSection(i)` | Confirms, then removes a section |
-| `wrapLines(ctx, text, maxWidth)` | Canvas text wrapping for the export |
-| `roundRect(ctx, …)` | Rounded-rectangle path helper for the canvas |
-| `exportImage()` | Measures the layout, draws the PNG and downloads it |
-
-### Event handling
-
-- **One delegated `click` listener** on `document` handles the move-up, delete and move-down buttons (through `data-up`, `data-delete` and `data-down` attributes) and the add button.
-- **One delegated `input` listener** updates `state` for the metadata fields and the section name and note fields (`data-name`, `data-note`), then saves.
-- Text input does **not** re-render, so focus and cursor position are kept while typing. Only structural changes (add, move, delete, import, reset) call `render()`.
-- The toolbar buttons use direct `onclick` handlers.
-
----
-
-## Styling and responsive layout
-
-The app has a dark theme defined with CSS custom properties:
-
-```css
---bg:#05090f;   --panel:#0b1420; --panel2:#0e1926; --text:#f3f6fb;
---muted:#9eacc0; --line:#26374c; --accent:#4da3ff; --danger:#ff5f7a;
---green:#18d47b; --orange:#ff9b2f; --cyan:#14cbe6; --pink:#ef4e9b;
-```
-
-Font stack: `Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`.
-
-**Desktop (> 850px):** each card is a 4-column grid: `7px accent | 250px identity | flexible notes | 44px tools`. Section names are 22px and notes are 18px. Card height follows the content.
-
-**Narrow screens (≤ 850px):** the card becomes `7px accent | content | 42px tools`, and the notes move under the section name with a top divider. Notes drop to 17px, and the header stacks the title area above the toolbar.
-
-Inputs look like plain text until you hover or focus them, when a subtle border and background appear.
-
----
-
-## Version history
-
-### v1.4.7-STABLE (current)
-
-- **Song Details layout:** a compact two-column card (identity | notes) on desktop, larger and easier-to-read note text, height that follows the content, and responsive collapse on small screens.
-- **PNG export typography:** section names enlarged to 24px and notes to 22px, with more line spacing and a height calculated from the content.
-- **Reset:** now clears to a truly blank song, with no sections and empty metadata, instead of restoring the example.
-- **Team Notes removed:** the "Catatan untuk Team" field is gone from the UI, the data model and the PNG export.
-
-### v1.4.6-STABLE (baseline)
-
-Song metadata, sections (name, color, notes, reorder, delete), JSON import/export, PNG export, `localStorage` persistence with migration from older keys, Reset, and a responsive UI.
-
-### Naming convention
-
-| Kind | Pattern |
-|---|---|
-| Development build | `song_structure_timeline_v1.x.y.html` |
-| Stable build | `song_structure_timeline_v1.x.y-STABLE.html` |
-
-In this repository the stable build is published as `index.html`.
-
----
-
-## Known limitations
-
-These are behaviors in the current code worth knowing about. They are candidates for future fixes, not intended features.
-
-- **Import drops some metadata.** Importing JSON only restores `title` and `sections`. `baseKey`, `serviceDate` and `serviceTitle` in the file are ignored and cleared, even though Export JSON includes them.
-- **An empty title comes back as "Song Title" after a reload.** Reset saves `title: ""`, but `load()` replaces an empty title with `"Song Title"` the next time the page opens.
-- **Section colors are not validated.** `color` from imported JSON goes straight into inline `style` attributes without being escaped, so only import JSON files you trust. Names and notes are escaped with `esc()`.
-- **The PNG file name is not sanitized.** A title with characters such as `/` or `:` can produce an odd file name, depending on the browser.
-- **Export truncation.** The song title is limited to 2 lines and section names to 2 lines in the PNG. Anything longer is cut off.
-- **Colors can't be picked in the UI.** Colors come from the built-in palette, or from an edited JSON file.
-- **Storage is per browser.** Data isn't synced across devices, so use JSON export for backups.
-
----
-
-## Contributing and preservation rules
-
-This app has built up deliberate behavior over many versions. Treat **v1.4.7-STABLE as the authoritative baseline**, and prefer **small, isolated changes** over rewrites.
-
-**Preserve:**
-
-- section ordering, the up/down controls and deletion;
-- per-section notes and accent colors;
-- all song metadata fields;
-- `localStorage` persistence and the existing storage/migration keys, unless you design a deliberate migration;
-- JSON import/export;
-- PNG export, including the content-based height;
-- the responsive layout;
-- reset-to-blank behavior.
-
-**Do not reintroduce:**
-
-- the Team Notes / *Catatan untuk Team* UI;
-- a Team Notes block in the PNG export;
-- a Reset that restores the example section template.
-
-**When changing the data schema**, add migration logic in `load()` and in the import path so older `localStorage` data and exported JSON files keep working.
-
-**Manual test checklist** (the project has no automated tests):
-
-1. Add, rename, add notes to, reorder and delete sections, then reload and confirm everything was saved.
-2. Export JSON, reset, import the file, and confirm the sections come back.
-3. Export a PNG with long notes and check that the height and wrapping are right.
-4. Resize below 850px and check the stacked card layout.
-5. Reset and confirm there are no sections and the fields are empty.
-
----
-
-## Repository layout
-
-```
-.
-├── index.html                    # The application (v1.4.7-STABLE)
-├── README.md                     # This file
-└── docs/
-    ├── AGENT_HANDOFF_v1.4.7.md   # Feature history, functional spec & preservation rules
-    └── TECH_SPECIFICATION.md     # Technical spec: stack, standards, architecture, algorithms
-```
-
-For more detail, see:
-
-- [`docs/TECH_SPECIFICATION.md`](docs/TECH_SPECIFICATION.md): the technology stack, web standards, architecture, data formats, the PNG rendering engine, security, accessibility, compatibility and known technical issues.
-- [`docs/AGENT_HANDOFF_v1.4.7.md`](docs/AGENT_HANDOFF_v1.4.7.md): the feature specification, version history and handoff rules for future contributors.
+See `changelog/` for release notes. Older docs for v2.x are in `docs/`. The v3.0.0 design spec and implementation plan are in `docs/superpowers/`.
