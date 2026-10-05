@@ -166,7 +166,7 @@ supabase/migrations/          001_share_function.sql, 002_auth_and_rls.sql, 003_
 - **Save fails with "Could not find the 'members' column":** `003_event_members.sql` hasn't been run.
 - **Add Song search says "Could not find the function public.search_songs" or Upload fails on a missing `songs` table:** run `004_song_library.sql`.
 - **A plain-text song uploads with chords in the wrong place:** the converter reads a line of only chords as chords for the line below, by column. Use spaces, not a proportional-font layout, or upload ChordPro.
-- **"Wrong password."" on login:** the password doesn't match the shared account, or `SHARED_LOGIN_EMAIL` doesn't match its email.
+- **"Wrong password." on login:** the password doesn't match the shared account, or `SHARED_LOGIN_EMAIL` doesn't match its email.
 - **Dev console: "Encountered a script tag while rendering React component":** harmless. On 404 and error pages, Next re-renders the root layout in the browser during development, and React warns about the theme script, which already ran from the server HTML.
 
 ## Switching to real accounts
