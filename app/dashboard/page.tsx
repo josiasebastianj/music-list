@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import Icon from "@/components/Icon";
@@ -31,7 +32,10 @@ export default async function DashboardPage() {
             <h1 className="dash-title">Your events</h1>
             <div className="dash-sub">{user.email}</div>
           </div>
-          <NewEventButton />
+          <div className="dash-head-actions">
+            <Link className="btn" href="/library/upload">Upload songs</Link>
+            <NewEventButton />
+          </div>
         </div>
         {error && <div className="share-banner error" role="alert">Could not load events: {error.message}</div>}
         {events && events.length > 0 ? (

@@ -232,3 +232,15 @@ a.btn{text-decoration:none}
 .team-role{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
 .team-name{font-size:16px;font-weight:600;overflow-wrap:anywhere}
 @media(max-width:680px){.team-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"name tools" "role tools"}.team-row .team-input:first-child{grid-area:name}.team-row .team-input:nth-child(2){grid-area:role}.team-row .icon-btn{grid-area:tools}}
+.dash-head-actions{display:flex;gap:8px;flex-wrap:wrap}
+.upload-drop{display:flex;flex-direction:column;align-items:center;gap:6px;margin:20px 0;padding:28px 16px;border:2px dashed var(--line-strong);border-radius:var(--r-sm);color:var(--muted);text-align:center;cursor:pointer}
+.upload-drop.over,.upload-drop:hover{border-color:var(--accent);color:var(--text)}
+.upload-table-wrap{overflow-x:auto}
+.upload-table{width:100%;border-collapse:collapse;font-size:14px}
+.upload-table th,.upload-table td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.upload-table input{width:100%;min-width:90px;padding:6px 8px;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--text)}
+.upload-table .btn{margin-top:6px}
+.upload-status{font-weight:700;white-space:nowrap}
+.upload-status.ok{color:var(--accent)}
+.upload-status.bad{color:var(--danger)}
+.upload-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px}
