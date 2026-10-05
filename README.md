@@ -1,6 +1,6 @@
 # MDCHORD
 
-**Version:** 3.1.0
+**Version:** 3.2.0
 
 MDCHORD (*One Church. One Sound. One Jesus.*) builds worship setlists. An Event holds Songs, and each Song holds Song Details (a name, a colour and a note). You can export a song as a PNG and share a read-only link to an event. A dashboard lists your events.
 
@@ -9,8 +9,7 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 ## Current status
 
 - **Testing mode.** Everyone logs in with one shared password to one shared Supabase account. There is no sign-up and no Google sign-in. All testers see and edit the same events. See "Switching to real accounts" to change this.
-- **Database.** `001` and `002` have been run on the project's Supabase database. `003` (team members) must be run before the Team feature can save.
-- **Song library.** Run `004_song_library.sql` before using Upload songs or the Add Song search.
+- **Database.** Migrations `001`–`004` are needed. Also run `005_library_details.sql` for owner, rhythm, BPM, themes and the library pages.
 - **Hosting.** Not deployed to Vercel yet. Run it locally with `npm run dev`.
 - **Branch.** The app is on `main` (merged from `revamp-nextjs` in pull request #1). The old single-file v2.4.0 page is gone from `main`, and since `002` removed its open access policies, it couldn't save anyway.
 
@@ -61,6 +60,8 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 
    - **`004_song_library.sql`** creates the shared `songs` table, a fast search index (`pg_trgm`) and the `search_songs` function. Logged-in users can search and add songs. Editing or deleting library songs is done in the Supabase table editor.
 
+   - **`005_library_details.sql`** adds `events.owner`, `songs.rhythm` and `bpm`, the `themes` and `song_themes` tables, and update/delete for library songs. It recreates `search_songs` and `get_shared_event`. It must run after `004`.
+
    If you are moving from a live v2.x site, read "Switching over from v2.x" before running `002`.
 
 4. Set up the shared tester login (testing mode):
@@ -84,7 +85,12 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 - **Song tabs:** **Lyrics Only** (large lyrics, no chords), **Lyrics + Chords** (chords above the words, instrumental bars as `| E . . . |`; **Edit** shows the ChordPro text), **Section Notes** (the song details).
 - **Paste a chord sheet:** after **Add blank song**, open **Lyrics + Chords** and paste a chord sheet copied from the web (chords on their own line above the lyrics). It's converted to ChordPro, and the song's empty title, key and Section Notes are filled in from it. **Undo** restores exactly what you pasted. ChordPro text and plain lyrics are pasted as they are. Some sites lose their chord alignment when copied; if chords land a few letters off, fix them with **Edit**.
 - **Key:** − and + move the song one semitone and rewrite its chords. On a share link they change only your view; **Reset** returns to the event's key.
-- **Upload songs** (dashboard): drop ChordPro (`.cho`, `.chopro`, `.pro`, `.chordpro`) or plain chords-above-lyrics `.txt` files, check the preview, then save. Duplicates (same title and artist) and unreadable files are skipped.
+- **Sidebar:** **Events**, **Library** and **Theme** on the list pages. Inside an event, the same three links are in the top bar.
+- **Events:** each event can have an **Owner** (free text, under the date), shown on the list and on share links.
+- **Library:** all songs A–Z, with a filter by title, artist or lyrics and a theme filter. Open a song to view it, **Edit** its details and lyrics or chords, or **Delete** it (events keep their copy).
+- **Add songs** (Library): paste a chord sheet or upload files, check each preview card (title, artist, key, rhythm, BPM, themes), then **Save**. `Tempo:`, `BPM:` and `Time:` lines prefill BPM and rhythm.
+- **Theme:** create, rename and delete themes. Deleting one removes it from every song.
+- **Rhythm and BPM in events:** imported songs bring their rhythm and BPM. Edit them next to the Key; share links show them as badges.
 - **Share link:** `/share/<token>` shows the event read-only to anyone with the link, without logging in, including the team list under **Team**. Old `/?share=<token>` links redirect there.
 
 ## Scripts
@@ -95,7 +101,7 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 | `npm run build` | Builds for production |
 | `npm run start` | Runs the production build |
 | `npm run lint` | Runs ESLint |
-| `npm test` | Runs `lib/event.test.ts` and `lib/chordpro.test.ts` with Node's test runner |
+| `npm test` | Runs `lib/event.test.ts`, `lib/chordpro.test.ts` and `lib/library.test.ts` with Node's test runner |
 
 On a fresh clone, `npx tsc --noEmit` needs `npm run dev`, `npm run build` or `npx next typegen` to have run first. `next-env.d.ts` and `.next/types` are generated and git-ignored.
 
@@ -109,7 +115,11 @@ On a fresh clone, `npx tsc --noEmit` needs `npm run dev`, `npm run build` or `np
 | `/dashboard` | logged in | Your events: new, edit, share, delete, log out |
 | `/events/[id]` | owner | The editor |
 | `/share/[token]` | public | Read-only view of an event |
-| `/library/upload` | logged in | Upload songs to the library |
+| `/library` | logged in | The song list |
+| `/library/new` | logged in | Add songs |
+| `/library/[id]` | logged in | One library song |
+| `/themes` | logged in | Themes |
+| `/library/upload` | logged in | Redirects to `/library/new` |
 
 ## Project layout
 
@@ -126,17 +136,29 @@ app/
   dashboard/DashboardButtons.tsx  New event, Share, Delete, Log out
   events/[id]/page.tsx        server: load row (RLS) -> 404, error page or <EventEditor>
   share/[token]/page.tsx      server: rpc get_shared_event -> 404, error page or <EventEditor readOnly>
-  library/upload/page.tsx       server: auth check -> <UploadSongs>
-  library/upload/UploadSongs.tsx  drop zone, preview, save
+  library/upload/page.tsx     redirects to /library/new
+  library/page.tsx            server: song list -> <LibraryList>
+  library/LibraryList.tsx     A-Z list, text and theme filters
+  library/new/page.tsx        server: auth check -> <AddSongs>
+  library/new/AddSongs.tsx    paste or upload, preview cards, save
+  library/[id]/page.tsx       server: load one library song
+  library/[id]/LibrarySongView.tsx  view, edit, delete
+  themes/page.tsx             server: themes -> <ThemeManager>
+  themes/ThemeManager.tsx     create, rename, delete themes
 components/
   AddSongDialog.tsx           Add Song search pop-up (library search, blank song)
   AppShell.tsx                top bar, page frame, footer
+  ChordSheet.tsx              chord sheet display shared by the library and events
   EventEditor.tsx             sidebar + song workspace; edit and read-only modes
   Icon.tsx                    SVG icons
   KeyControl.tsx              key - / + buttons and Reset
+  SectionLayout.tsx           page layout with the sidebar
+  SectionNav.tsx              Events / Library / Theme links
   SectionNotes.tsx            the song details (Section Notes tab)
+  SongFields.tsx              title, artist, key, rhythm, BPM and theme fields
   SongTabs.tsx                Lyrics Only / Lyrics + Chords / Section Notes tabs
   TeamDialog.tsx              Team button + pop-up (edit and read-only)
+  TempoControl.tsx            rhythm and BPM fields (badges on share links)
   ThemeToggle.tsx             light/dark switch
 lib/
   chordpro.ts                 ChordPro parse, transpose, plain-text conversion, search text
@@ -144,10 +166,12 @@ lib/
   event.ts                    types (Event, Song, Section, Member), eventFromRow, safeColor, colors, formatEventDate, randomShareToken
   event.test.ts               runnable check: node --test
   exportPng.ts                PNG export
+  library.ts                  library helpers (drafts, themes, filters)
+  library.test.ts             runnable check: node --test
   supabase/client.ts          browser client
   supabase/server.ts          server client (cookies)
 proxy.ts                      session refresh + login redirect
-supabase/migrations/          001_share_function.sql, 002_auth_and_rls.sql, 003_event_members.sql, 004_song_library.sql
+supabase/migrations/          001_share_function.sql, 002_auth_and_rls.sql, 003_event_members.sql, 004_song_library.sql, 005_library_details.sql
 .env.local.example            NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, SHARED_LOGIN_EMAIL
 ```
 
@@ -166,6 +190,7 @@ supabase/migrations/          001_share_function.sql, 002_auth_and_rls.sql, 003_
 - **Share links show an error page ("Could not find the function public.get_shared_event"):** the function doesn't exist. Run `003_event_members.sql` (it recreates the function and reloads the API).
 - **Save fails with "Could not find the 'members' column":** `003_event_members.sql` hasn't been run.
 - **Add Song search says "Could not find the function public.search_songs" or Upload fails on a missing `songs` table:** run `004_song_library.sql`.
+- **"… does not exist" or "… schema cache" errors that mention owner, rhythm, bpm, themes or song_themes:** run `005_library_details.sql`.
 - **A plain-text song uploads with chords in the wrong place:** the converter reads a line of only chords as chords for the line below, by column. Use spaces, not a proportional-font layout, or upload ChordPro.
 - **"Wrong password." on login:** the password doesn't match the shared account, or `SHARED_LOGIN_EMAIL` doesn't match its email.
 - **Dev console: "Encountered a script tag while rendering React component":** harmless. On 404 and error pages, Next re-renders the root layout in the browser during development, and React warns about the theme script, which already ran from the server HTML.

@@ -9,6 +9,7 @@ import KeyControl from "./KeyControl";
 import SectionNav from "./SectionNav";
 import SongTabs from "./SongTabs";
 import TeamDialog from "./TeamDialog";
+import TempoControl from "./TempoControl";
 import ThemeToggle from "./ThemeToggle";
 import { keyStep, transpose } from "@/lib/chordpro";
 import { migrationHint, type SetlistEvent, type Song } from "@/lib/event";
@@ -281,10 +282,14 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
                   )}
                   <div className="header-song-actions">
                     {readOnly ? (
-                      <KeyControl value={displayKey} readOnly onStep={stepView} onReset={displayKey !== song.baseKey ? resetView : undefined} />
+                      <>
+                        <KeyControl value={displayKey} readOnly onStep={stepView} onReset={displayKey !== song.baseKey ? resetView : undefined} />
+                        <TempoControl key={song.id} rhythm={song.rhythm} bpm={song.bpm} readOnly onChange={() => {}} />
+                      </>
                     ) : (
                       <>
                         <KeyControl value={song.baseKey} readOnly={false} onStep={stepKey} onType={(v) => updateSong(song.id, (s) => ({ ...s, baseKey: v }))} />
+                        <TempoControl key={song.id} rhythm={song.rhythm} bpm={song.bpm} readOnly={false} onChange={(patch) => updateSong(song.id, (s) => ({ ...s, ...patch }))} />
                         <button className="icon-btn" type="button" title="Move song up" aria-label="Move song up" disabled={index === 0} onClick={() => moveSong(-1)}><Icon name="up" /></button>
                         <button className="icon-btn" type="button" title="Move song down" aria-label="Move song down" disabled={index === event.songs.length - 1} onClick={() => moveSong(1)}><Icon name="down" /></button>
                         <button className="icon-btn danger" type="button" title="Delete song" aria-label="Delete song" onClick={deleteSong}><Icon name="trash" /></button>

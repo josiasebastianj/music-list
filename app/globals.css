@@ -339,3 +339,11 @@ a.btn{text-decoration:none}
 
 .draft-head{flex-wrap:wrap}
 .draft-head .upload-status{white-space:normal;overflow-wrap:anywhere;min-width:0}
+
+.tempo-control{display:inline-flex;gap:6px;margin-right:6px}
+.meta-field{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;min-height:56px;padding:4px 8px 6px;border:1.5px solid var(--line-strong);border-radius:12px}
+.meta-field span{color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+.meta-field input{width:56px;border:0;background:transparent;color:var(--text);font-size:16px;font-weight:800;text-align:center;outline:none}
+.meta-field:focus-within{border-color:var(--accent)}
+.tempo-badges{display:inline-flex;align-items:center;gap:6px;margin-right:6px}
+.tempo-badge{padding:6px 10px;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface-2);font-size:14px;font-weight:800}
