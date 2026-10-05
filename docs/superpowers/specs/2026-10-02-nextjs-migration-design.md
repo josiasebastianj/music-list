@@ -4,7 +4,7 @@
 **Baseline:** v2.4.0 (`main` @ `c3ccf1f`, phone-first redesign)
 **Target version:** v3.0.0
 
-> **Implementation status (2026-10-05).** Built on `revamp-nextjs`; both migrations have been run. Differences from this design:
+> **Implementation status (2026-10-05).** Built on `revamp-nextjs` and merged to `main` (pull request #1); `001` and `002` have been run, and `003` adds per-event team members. Differences from this design:
 > - **Login is in testing mode:** one shared password for one shared Supabase account (`app/login/actions.ts`, `SHARED_LOGIN_EMAIL`), sign-ups off. The email + password and Google login below was built and can be restored (README, "Switching to real accounts").
 > - **Dashboard rows** also have **Edit** and **Share** buttons next to Delete.
 > - **The editor opens with a full page load** from the dashboard, so the browser's unsaved-changes warning also covers the Back button.

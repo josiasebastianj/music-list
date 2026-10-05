@@ -11,7 +11,7 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 - **Testing mode.** Everyone logs in with one shared password to one shared Supabase account. There is no sign-up and no Google sign-in. All testers see and edit the same events. See "Switching to real accounts" to change this.
 - **Database.** `001` and `002` have been run on the project's Supabase database. `003` (team members) must be run before the Team feature can save.
 - **Hosting.** Not deployed to Vercel yet. Run it locally with `npm run dev`.
-- **Branch.** The app lives on the `revamp-nextjs` branch. `main` still holds the old single-file v2.4.0 page, which can no longer save because `002` removed its open access policies.
+- **Branch.** The app is on `main` (merged from `revamp-nextjs` in pull request #1). The old single-file v2.4.0 page is gone from `main`, and since `002` removed its open access policies, it couldn't save anyway.
 
 ## Requirements
 
@@ -178,9 +178,9 @@ Share links already sent point at the old v2.x host. Replace the old host's page
 <!doctype html><meta charset="utf-8"><script>location.replace("https://YOUR-VERCEL-DOMAIN/" + location.search + location.hash)</script>
 ```
 
-`/?share=<token>` on the new app redirects to `/share/<token>`. If the old host is GitHub Pages serving this repo's `main` branch, merging v3.0.0 deletes the old `index.html`. In that case add the stub (with the real domain) to the branch GitHub Pages serves, before or at the merge. Vercel serves the Next.js app and ignores a root `index.html`.
+`/?share=<token>` on the new app redirects to `/share/<token>`. If the old host is GitHub Pages serving this repo's `main` branch, the old `index.html` is already gone (v3.0.0 is merged), so old links show GitHub's 404. Add the stub (with the real domain) to the branch GitHub Pages serves. Vercel serves the Next.js app and ignores a root `index.html`.
 
-On this project, `002` has already run, so the old v2.x page can't save or show share links until the stub points at the new app.
+On this project, `002` has already run and v3.0.0 is merged, so old v2.x share links don't work until the stub points at the deployed app.
 
 ## History
 
