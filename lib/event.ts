@@ -4,8 +4,9 @@ export const colors = ["#8fc5ff", "#93dfb2", "#ffd37d", "#8edbe8", "#f3a5c6", "#
 
 export type Section = { id: string; name: string; color: string; note: string };
 export type Song = { id: string; title: string; baseKey: string; sections: Section[] };
-export type SetlistEvent = { eventName: string; eventDate: string; songs: Song[] };
-export type EventRow = { event_name: string | null; event_date: string | null; data: unknown };
+export type Member = { name: string; role: string };
+export type SetlistEvent = { eventName: string; eventDate: string; songs: Song[]; members: Member[] };
+export type EventRow = { event_name: string | null; event_date: string | null; data: unknown; members?: unknown };
 
 type Loose = { [key: string]: unknown } | null | undefined;
 const str = (value: unknown) => (typeof value === "string" ? value : "");
@@ -35,7 +36,12 @@ function normalizeSong(song: Loose): Song {
 
 export function eventFromRow(row: EventRow): SetlistEvent {
   const data = row.data as Loose;
-  return { eventName: row.event_name ?? "", eventDate: row.event_date ?? "", songs: list(data?.songs).map(normalizeSong) };
+  return {
+    eventName: row.event_name ?? "",
+    eventDate: row.event_date ?? "",
+    songs: list(data?.songs).map(normalizeSong),
+    members: list(row.members).map((m) => ({ name: str(m?.name), role: str(m?.role) })),
+  };
 }
 
 export function formatEventDate(date: string) {

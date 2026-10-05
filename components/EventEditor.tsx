@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import AppShell from "./AppShell";
 import Icon from "./Icon";
+import TeamDialog from "./TeamDialog";
 import ThemeToggle from "./ThemeToggle";
 import { colors, safeColor, uid, type Section, type SetlistEvent, type Song } from "@/lib/event";
 import { exportSongImage } from "@/lib/exportPng";
@@ -126,7 +127,7 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
     setSaving("saving");
     const { error } = await createClient()
       .from("events")
-      .update({ event_name: event.eventName.trim() || null, event_date: event.eventDate || null, data: { songs: event.songs }, updated_at: new Date().toISOString() })
+      .update({ event_name: event.eventName.trim() || null, event_date: event.eventDate || null, data: { songs: event.songs }, members: event.members, updated_at: new Date().toISOString() })
       .eq("id", eventId)
       .select("id")
       .single();
@@ -216,6 +217,7 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
                 aria-label="Event date"
               />
             )}
+            <TeamDialog members={event.members} readOnly={readOnly} onChange={(members) => update({ ...event, members })} />
           </div>
           <nav className="song-nav" aria-label="Songs">
             <div className="nav-heading">

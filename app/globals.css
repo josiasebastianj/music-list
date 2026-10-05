@@ -220,3 +220,15 @@ button.color-dot:hover::after{transform:scale(1.2)}
 a.btn{text-decoration:none}
 
 @media(max-width:680px){.btn-label{display:none}}
+
+.team-btn{margin-top:10px;gap:8px}
+.team-count{min-width:20px;padding:1px 6px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:800;text-align:center}
+.team-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:center}
+.team-input{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--line-strong);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:14px;outline:none}
+.team-input:focus{border-color:var(--accent)}
+.team-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.team-list li{display:flex;flex-direction:column;gap:2px;padding:10px 0;border-bottom:1px solid var(--line)}
+.team-list li:last-child{border-bottom:0}
+.team-role{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.team-name{font-size:16px;font-weight:600;overflow-wrap:anywhere}
+@media(max-width:680px){.team-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"name tools" "role tools"}.team-row .team-input:first-child{grid-area:name}.team-row .team-input:nth-child(2){grid-area:role}.team-row .icon-btn{grid-area:tools}}

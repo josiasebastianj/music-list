@@ -9,7 +9,7 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 ## Current status
 
 - **Testing mode.** Everyone logs in with one shared password to one shared Supabase account. There is no sign-up and no Google sign-in. All testers see and edit the same events. See "Switching to real accounts" to change this.
-- **Database.** Both migrations (`001` and `002`) have been run on the project's Supabase database.
+- **Database.** `001` and `002` have been run on the project's Supabase database. `003` (team members) must be run before the Team feature can save.
 - **Hosting.** Not deployed to Vercel yet. Run it locally with `npm run dev`.
 - **Branch.** The app lives on the `revamp-nextjs` branch. `main` still holds the old single-file v2.4.0 page, which can no longer save because `002` removed its open access policies.
 
@@ -56,6 +56,8 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 
      You should see exactly four, all for `{authenticated}`: `own select`, `own insert`, `own update` and `own delete`.
 
+   - **`003_event_members.sql`** adds the `members` column (a JSON list of `{name, role}`) and recreates `get_shared_event` so share links include the team. If you changed the types in `001`'s `returns table (...)`, make the same change here. Until it runs, saving an event fails with a missing `members` column error.
+
    If you are moving from a live v2.x site, read "Switching over from v2.x" before running `002`.
 
 4. Set up the shared tester login (testing mode):
@@ -75,8 +77,8 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 ## Using the app
 
 - **Dashboard:** lists events (name, date, song count), newest first. Each row has **Edit** (or click the title), **Share** (copies the read-only link) and **Delete**. **New event** creates an empty event and opens it.
-- **Editor:** add, reorder and delete songs and song details, cycle colours, export a song as PNG. **Save** stores the event. **Share** copies the read-only link. **← Dashboard** goes back. The browser warns before you leave with unsaved changes, including with the Back button.
-- **Share link:** `/share/<token>` shows the event read-only to anyone with the link, without logging in. Old `/?share=<token>` links redirect there.
+- **Editor:** add, reorder and delete songs and song details, cycle colours, export a song as PNG. **Team** (under the event date) opens a pop-up to add, edit and remove team members, each with a free-text name and role. **Save** stores the event. **Share** copies the read-only link. **← Dashboard** goes back. The browser warns before you leave with unsaved changes, including with the Back button.
+- **Share link:** `/share/<token>` shows the event read-only to anyone with the link, without logging in, including the team list under **Team**. Old `/?share=<token>` links redirect there.
 
 ## Scripts
 
@@ -120,15 +122,16 @@ components/
   AppShell.tsx                top bar, page frame, footer
   EventEditor.tsx             sidebar + song workspace; edit and read-only modes
   Icon.tsx                    SVG icons
+  TeamDialog.tsx              Team button + pop-up (edit and read-only)
   ThemeToggle.tsx             light/dark switch
 lib/
-  event.ts                    types (Event, Song, Section), eventFromRow, safeColor, colors, formatEventDate, randomShareToken
+  event.ts                    types (Event, Song, Section, Member), eventFromRow, safeColor, colors, formatEventDate, randomShareToken
   event.test.ts               runnable check: node --test
   exportPng.ts                PNG export
   supabase/client.ts          browser client
   supabase/server.ts          server client (cookies)
 proxy.ts                      session refresh + login redirect
-supabase/migrations/          001_share_function.sql, 002_auth_and_rls.sql
+supabase/migrations/          001_share_function.sql, 002_auth_and_rls.sql, 003_event_members.sql
 .env.local.example            NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, SHARED_LOGIN_EMAIL
 ```
 
@@ -136,7 +139,7 @@ supabase/migrations/          001_share_function.sql, 002_auth_and_rls.sql
 
 - Row Level Security makes events owner-only. A signed-in user can read, change and delete only rows where `user_id = auth.uid()`. Logged-out visitors can't read the table at all.
 - In testing mode, everyone shares one account, so everyone with the password can see and change every event that account owns. Sign-ups are turned off in Supabase.
-- Share links go through the `get_shared_event(token)` function. It returns the name, date and data for one share token, and no id or owner. Anyone with the link can read that event, and nobody can change it.
+- Share links go through the `get_shared_event(token)` function. It returns the name, date, data and team members for one share token, and no id or owner. Anyone with the link can read that event, and nobody can change it.
 - The app uses only the publishable key. Never put the `service_role` or secret key in this app.
 - `proxy.ts` refreshes the session cookie and sends logged-out visitors to `/login`. That is a convenience. RLS is the security boundary.
 - Events saved before v3.0.0 have `user_id = null`. Their share links still work, but nobody can edit them, and they don't appear on the dashboard.
@@ -144,7 +147,8 @@ supabase/migrations/          001_share_function.sql, 002_auth_and_rls.sql
 ## Troubleshooting
 
 - **"new row violates row-level security policy" when creating an event:** `002_auth_and_rls.sql` hasn't been run. The v2.3.0 policies only allow the `anon` role, and a logged-in user is `authenticated`. Run `002`.
-- **Share links show an error page ("Could not find the function public.get_shared_event"):** the function from `001` doesn't exist. Re-run the `create function` and `grant` statements from `001_share_function.sql`, then run `notify pgrst, 'reload schema';` so the API sees it.
+- **Share links show an error page ("Could not find the function public.get_shared_event"):** the function doesn't exist. Run `003_event_members.sql` (it recreates the function and reloads the API).
+- **Save fails with "Could not find the 'members' column":** `003_event_members.sql` hasn't been run.
 - **"Wrong password." on login:** the password doesn't match the shared account, or `SHARED_LOGIN_EMAIL` doesn't match its email.
 - **Dev console: "Encountered a script tag while rendering React component":** harmless. On 404 and error pages, Next re-renders the root layout in the browser during development, and React warns about the theme script, which already ran from the server HTML.
 

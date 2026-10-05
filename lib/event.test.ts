@@ -33,8 +33,24 @@ test("eventFromRow handles missing or non-array data", () => {
     eventName: "Sunday",
     eventDate: "2026-10-04",
     songs: [],
+    members: [],
   });
   assert.deepEqual(eventFromRow({ event_name: null, event_date: null, data: { songs: "nope" } }).songs, []);
+});
+
+test("eventFromRow reads team members and cleans bad entries", () => {
+  const row = { event_name: null, event_date: null, data: null };
+  assert.deepEqual(
+    eventFromRow({ ...row, members: [{ name: "Josia", role: "Keys" }, { name: 5, role: "Drums" }, null, "junk"] }).members,
+    [
+      { name: "Josia", role: "Keys" },
+      { name: "", role: "Drums" },
+      { name: "", role: "" },
+      { name: "", role: "" },
+    ],
+  );
+  assert.deepEqual(eventFromRow({ ...row, members: "nope" }).members, []);
+  assert.deepEqual(eventFromRow(row).members, []);
 });
 
 test("eventFromRow keeps valid data unchanged", () => {
