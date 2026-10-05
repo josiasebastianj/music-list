@@ -6,11 +6,12 @@ import AddSongDialog from "./AddSongDialog";
 import AppShell from "./AppShell";
 import Icon from "./Icon";
 import KeyControl from "./KeyControl";
+import SectionNav from "./SectionNav";
 import SongTabs from "./SongTabs";
 import TeamDialog from "./TeamDialog";
 import ThemeToggle from "./ThemeToggle";
 import { keyStep, transpose } from "@/lib/chordpro";
-import type { SetlistEvent, Song } from "@/lib/event";
+import { migrationHint, type SetlistEvent, type Song } from "@/lib/event";
 import { exportSongImage } from "@/lib/exportPng";
 import { createClient } from "@/lib/supabase/client";
 
@@ -124,7 +125,7 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
     setSaving("saving");
     const { error } = await createClient()
       .from("events")
-      .update({ event_name: event.eventName.trim() || null, event_date: event.eventDate || null, data: { songs: event.songs }, members: event.members, updated_at: new Date().toISOString() })
+      .update({ event_name: event.eventName.trim() || null, event_date: event.eventDate || null, owner: event.owner.trim() || null, data: { songs: event.songs }, members: event.members, updated_at: new Date().toISOString() })
       .eq("id", eventId)
       .select("id")
       .single();
@@ -133,7 +134,7 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
       setError(
         error.code === "PGRST116"
           ? "You're signed out, or this event isn't yours. Log in again in another tab, then press Save — your changes are still here."
-          : `Could not save event: ${error.message}`,
+          : `Could not save event: ${migrationHint(error.message)}`,
       );
       return;
     }
@@ -158,16 +159,7 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
     <ThemeToggle />
   ) : (
     <>
-      <Link
-        className="btn"
-        href="/dashboard"
-        aria-label="Dashboard"
-        onClick={(e) => {
-          if (dirty && !confirm("Leave without saving your changes?")) e.preventDefault();
-        }}
-      >
-        ←<span className="btn-label"> Dashboard</span>
-      </Link>
+      <SectionNav compact />
       <button className="btn primary" type="button" onClick={save} disabled={saving === "saving"}>
         {saving === "saving" ? "Saving…" : saving === "saved" ? "Saved" : "Save"}
       </button>
@@ -212,6 +204,16 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
                 onChange={(e) => update({ ...event, eventDate: e.target.value })}
                 readOnly={readOnly}
                 aria-label="Event date"
+              />
+            )}
+            {!(readOnly && !event.owner.trim()) && (
+              <input
+                className="event-owner"
+                value={event.owner}
+                onChange={(e) => update({ ...event, owner: e.target.value })}
+                readOnly={readOnly}
+                aria-label="Event owner"
+                placeholder="Owner"
               />
             )}
             <TeamDialog members={event.members} readOnly={readOnly} onChange={(members) => update({ ...event, members })} />
