@@ -205,16 +205,13 @@ function expandTabs(line: string) {
   return out;
 }
 
-function headingLabel(trimmed: string): string | null {
-  const inner = trimmed.replace(/^[[(](.*)[\])]$/, "$1").trim();
-  if (HEADING_RE.test(inner)) return inner.replace(/[.:]$/, "");
-  return null;
-}
-
-function isHeadingAt(lines: string[], i: number): boolean {
+function headingLabelAt(lines: string[], i: number): string | null {
   const trimmed = lines[i].trim();
-  const label = headingLabel(trimmed);
-  if (label !== null) return true;
+  const inner = trimmed.replace(/^[[(](.*)[\])]$/, "$1").trim();
+
+  // Check HEADING_RE match
+  if (HEADING_RE.test(inner)) return inner.replace(/[.:]$/, "");
+
   // Colon-heading check: only if not directly below a chord line
   if (trimmed.endsWith(":") && trimmed.length <= 40 && !trimmed.slice(0, -1).includes(":")) {
     const prevLine = i > 0 ? lines[i - 1] : null;
@@ -223,12 +220,13 @@ function isHeadingAt(lines: string[], i: number): boolean {
       for (let j = i + 1; j < lines.length; j++) {
         const next = lines[j].trim();
         if (!next) continue;
-        return isChordLine(lines[j]);
+        return isChordLine(lines[j]) ? trimmed.slice(0, -1).trim() : null;
       }
-      return true; // No next non-blank line
+      // No next non-blank line
+      return trimmed.slice(0, -1).trim();
     }
   }
-  return false;
+  return null;
 }
 
 function isChordLine(line: string) {
@@ -264,7 +262,7 @@ export function fromChordsAboveLyrics(text: string, fallbackTitle: string): stri
   });
   let title = fallbackTitle;
   const first = lines.findIndex((l, i) => !used.has(i) && l.trim() !== "");
-  if (first >= 0 && !isChordLine(lines[first]) && !isHeadingAt(lines, first)) {
+  if (first >= 0 && !isChordLine(lines[first]) && headingLabelAt(lines, first) === null) {
     title = lines[first].trim();
     used.add(first);
   }
@@ -278,14 +276,14 @@ export function fromChordsAboveLyrics(text: string, fallbackTitle: string): stri
       out.push("");
       continue;
     }
-    if (isHeadingAt(lines, i)) {
-      const label = headingLabel(trimmed);
+    const label = headingLabelAt(lines, i);
+    if (label !== null) {
       out.push(`{comment: ${label}}`);
       continue;
     }
     if (isChordLine(line)) {
       const next = lines[i + 1];
-      if (!trimmed.includes("|") && next !== undefined && !used.has(i + 1) && next.trim() && !isChordLine(next) && !isHeadingAt(lines, i + 1)) {
+      if (!trimmed.includes("|") && next !== undefined && !used.has(i + 1) && next.trim() && !isChordLine(next) && headingLabelAt(lines, i + 1) === null) {
         out.push(mergeChords(line, next));
         i++;
         continue;

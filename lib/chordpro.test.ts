@@ -164,8 +164,9 @@ test("a converted sheet parses back into sections", () => {
 
 test("fromChordsAboveLyrics keeps lyric lines ending in a colon", () => {
   assert.equal(fromChordsAboveLyrics("Song\nD\nAnd He said:\nG\nCome to me", "f"), "{title: Song}\n[D]And He said:\n[G]Come to me");
-  assert.equal(fromChordsAboveLyrics("Song\nE  B\nLa la", "f"), "{title: Song}\n[E]La [B]la");
+  assert.equal(fromChordsAboveLyrics("Song\nCoda:\nE  B\nLa la", "f"), "{title: Song}\n{comment: Coda}\n[E]La [B]la");
   assert.equal(fromChordsAboveLyrics("Song\nChorus:\nSing", "f"), "{title: Song}\n{comment: Chorus}\nSing");
+  assert.equal(fromChordsAboveLyrics("Song\nLa la\nEnd:", "f"), "{title: Song}\nLa la\n{comment: End}");
 });
 
 test("parseChordPro skips tab blocks", () => {
