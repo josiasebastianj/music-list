@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useSyncExternalStore, type ClipboardEvent } from "react";
 import SectionNotes from "./SectionNotes";
+import ChordSheet from "./ChordSheet";
 import { convertPastedChords, lyricLines, parseChordPro } from "@/lib/chordpro";
 import type { Section, Song } from "@/lib/event";
 import { fillFromContent } from "@/lib/songContent";
@@ -22,7 +23,6 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "notes", label: "Section Notes" },
 ];
 const TAB_KEY = "setlistApp_songTab";
-const NBSP = " ";
 
 function readTab(): Tab | null {
   try {
@@ -142,27 +142,7 @@ export default function SongTabs({ song, content, readOnly, onContentChange, onS
               spellCheck={false}
             />
           ) : hasLyrics ? (
-            parsed.sections.map((s, i) => (
-              <section key={i} className="lyrics-section">
-                {s.label && <h3 className="lyrics-label">{s.label}</h3>}
-                {s.lines.map((line, j) =>
-                  line.type === "grid" ? (
-                    <div key={j} className="chord-grid">{line.cells.join(" ")}</div>
-                  ) : line.segments.some((g) => g.chord) ? (
-                    <div key={j} className="chord-line">
-                      {line.segments.map((g, k) => (
-                        <span key={k} className="chord-seg">
-                          <span className="chord">{g.chord ?? NBSP}</span>
-                          <span className="chord-text">{g.text || NBSP}</span>
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p key={j} className="lyrics-line chord-plain">{line.segments.map((g) => g.text).join("")}</p>
-                  ),
-                )}
-              </section>
-            ))
+            <ChordSheet parsed={parsed} />
           ) : (
             empty
           )}

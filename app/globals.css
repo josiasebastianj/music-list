@@ -305,3 +305,8 @@ a.btn{text-decoration:none}
 .theme-add .team-input{flex:1;min-width:0}
 .theme-edit{display:flex;align-items:center;gap:8px;flex:1;padding:10px 0;min-width:0}
 .theme-edit .team-input{flex:1;min-width:0}
+.lib-filters{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
+.lib-filters .team-input{flex:1 1 220px;min-width:0}
+.lib-filters .lib-theme-filter{flex:0 1 200px}
+.theme-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.theme-chip{padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:700}
