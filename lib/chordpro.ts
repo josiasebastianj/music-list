@@ -264,7 +264,8 @@ function gridLine(trimmed: string) {
   return trimmed.includes("|") ? trimmed.replace(/\s+/g, " ") : `| ${trimmed.split(/\s+/).join(" ")} |`;
 }
 
-export function fromChordsAboveLyrics(text: string, fallbackTitle: string): string {
+// withTitle: false converts a block pasted into existing text — no title is taken from its first line, and no {title}/{key} is written.
+export function fromChordsAboveLyrics(text: string, fallbackTitle: string, withTitle = true): string {
   const lines = text.replace(/\r\n?/g, "\n").split("\n").map((l) => expandTabs(l).trimEnd());
   const used = new Set<number>();
   let key = "";
@@ -277,12 +278,13 @@ export function fromChordsAboveLyrics(text: string, fallbackTitle: string): stri
   });
   let title = fallbackTitle;
   const first = lines.findIndex((l, i) => !used.has(i) && l.trim() !== "");
-  if (first >= 0 && !isChordLine(lines[first]) && headingLabelAt(lines, first) === null) {
+  if (withTitle && first >= 0 && !isChordLine(lines[first]) && headingLabelAt(lines, first) === null) {
     title = lines[first].trim();
     used.add(first);
   }
-  const out = [`{title: ${title}}`];
-  if (key) out.push(`{key: ${key}}`);
+  const out: string[] = [];
+  if (withTitle && title) out.push(`{title: ${title}}`);
+  if (withTitle && key) out.push(`{key: ${key}}`);
   for (let i = 0; i < lines.length; i++) {
     if (used.has(i)) continue;
     const line = lines[i];
@@ -309,4 +311,12 @@ export function fromChordsAboveLyrics(text: string, fallbackTitle: string): stri
     out.push(trimmed);
   }
   return out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+// A chord sheet pasted from the web → ChordPro. null means "paste it as is": already ChordPro, or no chord lines (plain lyrics).
+export function convertPastedChords(text: string, withTitle: boolean): string | null {
+  if (isChordProText(text)) return null;
+  const lines = text.replace(/\r\n?/g, "\n").split("\n").map(expandTabs);
+  if (!lines.some(isChordLine)) return null;
+  return fromChordsAboveLyrics(text, "", withTitle);
 }

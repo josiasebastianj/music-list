@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  convertPastedChords,
   fromChordsAboveLyrics,
   guessKey,
   isChord,
@@ -215,4 +216,23 @@ test("subtitle fills the artist, # lines are comments, a new section ends a tab"
   assert.equal(song.artist, "Sinach");
   assert.deepEqual(lyricLines(song), [{ label: "Chorus", lines: ["Sing"] }]);
   assert.equal(parseChordPro("{artist: X}\n{st: Y}").artist, "X");
+});
+
+test("convertPastedChords converts a pasted chord sheet with its title and key", () => {
+  assert.equal(convertPastedChords("Way Maker\nKey: E\nE       B\nYou are here", true), "{title: Way Maker}\n{key: E}\n[E]You are [B]here");
+});
+
+test("convertPastedChords keeps the first line when pasting into existing text", () => {
+  assert.equal(convertPastedChords("Verse 2:\nE       B\nYou are here", false), "{comment: Verse 2}\n[E]You are [B]here");
+  assert.equal(convertPastedChords("Still here\nE       B\nYou are here", false), "Still here\n[E]You are [B]here");
+});
+
+test("convertPastedChords leaves ChordPro and plain lyrics alone", () => {
+  assert.equal(convertPastedChords("{title: X}\n[C]Hi", true), null);
+  assert.equal(convertPastedChords("You are [E]here", false), null);
+  assert.equal(convertPastedChords("Just lyrics\nno chords at all", true), null);
+});
+
+test("fromChordsAboveLyrics writes no title directive without a title", () => {
+  assert.equal(fromChordsAboveLyrics("E       B\nYou are here", ""), "[E]You are [B]here");
 });

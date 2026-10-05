@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Icon from "./Icon";
-import { lyricLines, normalizeSearch, parseChordPro, sectionLabels } from "@/lib/chordpro";
-import { colors, uid, type Song } from "@/lib/event";
+import { lyricLines, normalizeSearch, parseChordPro } from "@/lib/chordpro";
+import { uid, type Song } from "@/lib/event";
+import { sectionNotesFrom } from "@/lib/songContent";
 import { createClient } from "@/lib/supabase/client";
 
 type Result = { id: string; title: string; artist: string | null; song_key: string; content: string };
@@ -15,7 +16,7 @@ function songFromLibrary(r: Result): Song {
     baseKey: r.song_key,
     content: r.content,
     librarySongId: r.id,
-    sections: sectionLabels(r.content).map((name, i) => ({ id: uid("section"), name, color: colors[i % colors.length], note: "" })),
+    sections: sectionNotesFrom(r.content),
   };
 }
 

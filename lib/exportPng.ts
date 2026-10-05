@@ -110,7 +110,7 @@ export function exportSongImage(event: SetlistEvent, song: Song, dark: boolean) 
   const footerY = y + 10;
   ctx.strokeStyle = palette.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(pad, footerY); ctx.lineTo(pad + cw, footerY); ctx.stroke();
   ctx.fillStyle = palette.muted; ctx.font = "500 15px Inter,Arial,sans-serif";
-  ctx.fillText("setlist.app", pad, footerY + 27);
+  ctx.fillText("MDCHORD", pad, footerY + 27);
   ctx.fillText("Author: josiasebastianj", pad + 120, footerY + 27);
   ctx.fillText("Version: " + APP_VERSION, pad + 360, footerY + 27);
 

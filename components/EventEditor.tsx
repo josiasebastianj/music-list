@@ -299,6 +299,7 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
                 readOnly={readOnly}
                 onContentChange={(content) => updateSong(song.id, (s) => ({ ...s, content }))}
                 onSectionsChange={(sections) => updateSong(song.id, (s) => ({ ...s, sections }))}
+                onSongChange={(next) => updateSong(song.id, () => next)}
               />
 
               <div className="main-bottom">

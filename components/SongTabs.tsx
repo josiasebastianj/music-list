@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useMemo, useState, useSyncExternalStore, type ClipboardEvent } from "react";
 import SectionNotes from "./SectionNotes";
-import { lyricLines, parseChordPro } from "@/lib/chordpro";
+import { convertPastedChords, lyricLines, parseChordPro } from "@/lib/chordpro";
 import type { Section, Song } from "@/lib/event";
+import { fillFromContent } from "@/lib/songContent";
 
 type Tab = "lyrics" | "chords" | "notes";
 type Props = {
@@ -12,6 +13,7 @@ type Props = {
   readOnly: boolean;
   onContentChange: (content: string) => void;
   onSectionsChange: (sections: Section[]) => void;
+  onSongChange: (song: Song) => void; // a converted paste may also fill in title, key and Section Notes
 };
 
 const TABS: { id: Tab; label: string }[] = [
@@ -36,13 +38,38 @@ function subscribe(onChange: () => void) {
   return () => window.removeEventListener("storage", onChange);
 }
 
-export default function SongTabs({ song, content, readOnly, onContentChange, onSectionsChange }: Props) {
+export default function SongTabs({ song, content, readOnly, onContentChange, onSectionsChange, onSongChange }: Props) {
   const stored = useSyncExternalStore(subscribe, readTab, () => null);
   const [picked, setPicked] = useState<Tab | null>(null);
   const [editing, setEditing] = useState(false);
+  // after a converted paste: the song as it was, plus the content a plain paste would have given
+  const [undo, setUndo] = useState<{ before: Song; raw: string } | null>(null);
   const parsed = useMemo(() => parseChordPro(content), [content]);
   const hasLyrics = content.trim() !== "";
   const tab: Tab = picked ?? (hasLyrics ? (stored ?? "chords") : "notes");
+  const showEditor = !readOnly && (editing || !hasLyrics); // empty songs open straight into the editor
+  const showUndo = undo !== null && undo.before.id === song.id;
+
+  function onPaste(e: ClipboardEvent<HTMLTextAreaElement>) {
+    const pasted = e.clipboardData.getData("text/plain");
+    const intoEmpty = content.trim() === "";
+    const converted = convertPastedChords(pasted, intoEmpty);
+    if (converted === null) return; // ChordPro or plain lyrics: let the browser paste it as is
+    e.preventDefault();
+    const { selectionStart: start, selectionEnd: end } = e.currentTarget;
+    const raw = content.slice(0, start) + pasted + content.slice(end);
+    setUndo({ before: song, raw });
+    setEditing(false); // show the converted result
+    if (intoEmpty) onSongChange(fillFromContent(song, converted));
+    else onContentChange(content.slice(0, start) + converted + content.slice(end));
+  }
+
+  function undoPaste() {
+    if (!undo) return;
+    onSongChange({ ...undo.before, content: undo.raw });
+    setUndo(null);
+    setEditing(true);
+  }
 
   function choose(t: Tab) {
     setPicked(t);
@@ -55,7 +82,7 @@ export default function SongTabs({ song, content, readOnly, onContentChange, onS
 
   const empty = (
     <p className="lyrics-empty">
-      No lyrics yet.{!readOnly && " Use Edit on the Lyrics + Chords tab to paste ChordPro, or add the song from the library."}
+      No lyrics yet.{!readOnly && " Open the Lyrics + Chords tab to paste a chord sheet, or add the song from the library."}
     </p>
   );
 
@@ -85,15 +112,35 @@ export default function SongTabs({ song, content, readOnly, onContentChange, onS
 
       {tab === "chords" && (
         <>
-          {!readOnly && (
+          {!readOnly && (showUndo || hasLyrics) && (
             <div className="lyrics-toolbar">
-              <button className="btn compact" type="button" aria-pressed={editing} onClick={() => setEditing(!editing)}>
-                {editing ? "Done editing" : "Edit"}
-              </button>
+              {showUndo && (
+                <p className="paste-note" role="status">
+                  Converted to ChordPro.{" "}
+                  <button className="link-btn" type="button" onClick={undoPaste}>Undo</button>
+                </p>
+              )}
+              {hasLyrics && (
+                <button className="btn compact" type="button" aria-pressed={editing} onClick={() => setEditing(!editing)}>
+                  {editing ? "Done editing" : "Edit"}
+                </button>
+              )}
             </div>
           )}
-          {editing && !readOnly ? (
-            <textarea className="chord-editor" value={content} onChange={(e) => onContentChange(e.target.value)} aria-label="Lyrics and chords (ChordPro)" spellCheck={false} />
+          {showEditor ? (
+            <textarea
+              className="chord-editor"
+              value={content}
+              onChange={(e) => {
+                setEditing(true); // keep the editor open once typing starts in an empty song
+                setUndo(null);
+                onContentChange(e.target.value);
+              }}
+              onPaste={onPaste}
+              placeholder="Paste a chord sheet from the web or ChordPro text here."
+              aria-label="Lyrics and chords (ChordPro)"
+              spellCheck={false}
+            />
           ) : hasLyrics ? (
             parsed.sections.map((s, i) => (
               <section key={i} className="lyrics-section">

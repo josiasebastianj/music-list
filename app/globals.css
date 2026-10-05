@@ -275,3 +275,7 @@ a.btn{text-decoration:none}
 .chord-editor:focus{border-color:var(--accent)}
 
 @media(max-width:680px){.song-tabs{gap:2px}.song-tab{flex:1;padding:10px 4px;font-size:13px}}
+
+.paste-note{margin:0 auto 0 0;color:var(--muted);font-size:13px}
+.link-btn{padding:0;border:0;background:none;color:var(--accent);font-weight:700;text-decoration:underline;cursor:pointer}
+.lyrics-toolbar{gap:12px;align-items:center}

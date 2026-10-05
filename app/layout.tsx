@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "setlist.app",
-  description: "Simple. Organized. Ready for Worship.",
+  title: "MDCHORD",
+  description: "One Church. One Sound. One Jesus.",
 };
 
 const themeScript = `(function(){var t=null;try{t=localStorage.getItem("setlistApp_theme")}catch(e){}document.documentElement.dataset.theme=t||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")})()`;
