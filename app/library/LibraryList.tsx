@@ -6,9 +6,12 @@ import { songMetaLine, type LibrarySong, type Theme } from "@/lib/library";
 
 type Row = Omit<LibrarySong, "content">;
 
+// One fixed zone, so the server (UTC on Vercel) and the browser render the same day.
+const TIME_ZONE = "Asia/Jakarta";
+
 function formatUpdated(iso?: string) {
   const d = iso ? new Date(iso) : null;
-  return d && !Number.isNaN(d.getTime()) ? d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "";
+  return d && !Number.isNaN(d.getTime()) ? d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: TIME_ZONE }) : "";
 }
 
 export default function LibraryList({ songs, themes }: { songs: Row[]; themes: Theme[] }) {
@@ -73,7 +76,7 @@ export default function LibraryList({ songs, themes }: { songs: Row[]; themes: T
                 )}
               </a>
               {s.updated_at && (
-                <span className="dash-meta lib-updated" suppressHydrationWarning>
+                <span className="dash-meta lib-updated">
                   Updated {formatUpdated(s.updated_at)}
                 </span>
               )}

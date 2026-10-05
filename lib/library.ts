@@ -66,7 +66,7 @@ export type Draft = {
   unreadable: boolean;
   duplicate: boolean;
   confirmed: boolean; // the user checked the preview; only confirmed drafts are saved
-  pasted?: boolean; // made from the paste box (Preview again replaces it until confirmed)
+  pasted?: string; // the paste box text it came from; Preview again replaces it until it's confirmed
   result?: string;
 };
 

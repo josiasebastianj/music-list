@@ -9,7 +9,7 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 ## Current status
 
 - **Testing mode.** Everyone logs in with one shared password to one shared Supabase account. There is no sign-up and no Google sign-in. All testers see and edit the same events. See "Switching to real accounts" to change this.
-- **Database.** Migrations `001`–`004` are needed. Also run `005_library_details.sql` for owner, rhythm, BPM, themes and the library pages, then `006_song_updated_at.sql` for the Library’s "Updated" dates.
+- **Database.** Migrations `001`–`004` are needed. Also run `005_library_details.sql` for owner, rhythm, BPM, themes and the library pages, then `006_song_updated_at.sql` (required: the Library page won’t load without it).
 - **Hosting.** Not deployed to Vercel yet. Run it locally with `npm run dev`.
 - **Branch.** The app is on `main` (merged from `revamp-nextjs` in pull request #1). The old single-file v2.4.0 page is gone from `main`, and since `002` removed its open access policies, it couldn't save anyway.
 
@@ -62,7 +62,7 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 
    - **`005_library_details.sql`** adds `events.owner`, `songs.rhythm` and `bpm`, the `themes` and `song_themes` tables, and update/delete for library songs. It recreates `search_songs` and `get_shared_event`. It must run after `004`. If you ever re-run an older migration, re-run `005` afterwards (re-running `003` drops `owner` from share links).
 
-   - **`006_song_updated_at.sql`** adds `songs.updated_at` (filled from `created_at` for existing songs) and a trigger that updates it on every save. The Library list shows it as "Updated …". Safe to re-run.
+   - **`006_song_updated_at.sql`** adds `songs.updated_at` (filled from `created_at` for existing songs) and a trigger that updates it on every save. The Library list shows it as "Updated …" (in Asia/Jakarta time) and won’t load until this has run. Safe to re-run.
 
    If you are moving from a live v2.x site, read "Switching over from v2.x" before running `002`.
 

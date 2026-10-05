@@ -19,18 +19,21 @@ export default function EventList({ events }: { events: EventRowSummary[] }) {
   const [ascending, setAscending] = useState(false);
   const owners = useMemo(() => ownerOptions(events), [events]);
   const months = useMemo(() => [...new Set(events.map((e) => monthKey(e.event_date)).filter(Boolean))].sort().reverse(), [events]);
-  const shown = useMemo(() => filterEvents(events, { owner, month, ascending }), [events, owner, month, ascending]);
+  // A filter whose last event was deleted falls back to "All".
+  const ownerSel = owners.includes(owner) ? owner : "";
+  const monthSel = months.includes(month) ? month : "";
+  const shown = useMemo(() => filterEvents(events, { owner: ownerSel, month: monthSel, ascending }), [events, ownerSel, monthSel, ascending]);
 
   return (
     <>
       <div className="lib-filters">
-        <select className="team-input lib-theme-filter" value={owner} onChange={(e) => setOwner(e.target.value)} aria-label="Filter by owner">
+        <select className="team-input lib-theme-filter" value={ownerSel} onChange={(e) => setOwner(e.target.value)} aria-label="Filter by owner">
           <option value="">All owners</option>
           {owners.map((o) => (
             <option key={o} value={o}>{o}</option>
           ))}
         </select>
-        <select className="team-input lib-theme-filter" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="Filter by month">
+        <select className="team-input lib-theme-filter" value={monthSel} onChange={(e) => setMonth(e.target.value)} aria-label="Filter by month">
           <option value="">All months</option>
           {months.map((m) => (
             <option key={m} value={m}>{formatMonth(m)}</option>

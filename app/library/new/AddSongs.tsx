@@ -14,7 +14,10 @@ import { createClient } from "@/lib/supabase/client";
 const ACCEPT = ".cho,.chopro,.pro,.chordpro,.txt";
 
 // The paste box's current card: not confirmed or saved yet.
-const isOpenPaste = (d: Draft) => !!d.pasted && !d.confirmed && !d.result;
+const isOpenPaste = (d: Draft) => d.pasted !== undefined && !d.confirmed && !d.result;
+
+// A confirmed card whose save failed goes back to plain Confirmed, so Save retries it.
+const retry = (d: Draft) => (d.result?.startsWith("Failed:") ? { ...d, result: undefined } : d);
 
 export default function AddSongs({ themes, actions, loadError }: { themes: Theme[]; actions: ReactNode; loadError?: string }) {
   const [mode, setMode] = useState<"paste" | "files">("paste");
@@ -85,12 +88,13 @@ export default function AddSongs({ themes, actions, loadError }: { themes: Theme
   // The text stays in the box until its card is confirmed.
   async function onPreview() {
     if (!pasted.trim()) return;
-    await addDrafts([{ ...draftFrom("Pasted text", pasted, ""), pasted: true }], true);
+    await addDrafts([{ ...draftFrom("Pasted text", pasted, ""), pasted }], true);
   }
 
+  // Clears the paste box only if it still holds a confirmed card's text. A confirmed card is never the box's card again.
   function confirmDrafts(which: (d: Draft, i: number) => boolean) {
-    if (drafts.some((d, i) => which(d, i) && d.pasted)) setPasted("");
-    setDrafts((current) => current.map((d, i) => (which(d, i) ? { ...d, confirmed: true } : d)));
+    if (drafts.some((d, i) => which(d, i) && d.pasted === pasted)) setPasted("");
+    setDrafts((current) => current.map((d, i) => (which(d, i) ? { ...d, confirmed: true, pasted: undefined } : d)));
   }
 
   const edit = (i: number, patch: Partial<Draft>) => setDrafts((current) => current.map((d, j) => (j === i ? { ...d, ...patch } : d)));
@@ -120,7 +124,6 @@ export default function AddSongs({ themes, actions, loadError }: { themes: Theme
     if (ready > 0 && !confirm(`${ready} previewed ${ready === 1 ? "song isn't" : "songs aren't"} confirmed and won't be saved. Save the confirmed ${confirmed === 1 ? "song" : "songs"} anyway?`)) return;
     setBusy(true);
     setMessage(null);
-    const retry = (d: Draft) => (d.result?.startsWith("Failed:") ? { ...d, result: undefined } : d);
     setDrafts((cur) => cur.map(retry));
     const supabase = createClient();
     const snapshot = drafts.map(retry);
@@ -151,7 +154,7 @@ export default function AddSongs({ themes, actions, loadError }: { themes: Theme
   }
 
   const ready = drafts.filter(isReady).length;
-  const confirmed = drafts.filter(isConfirmed).length;
+  const confirmed = drafts.filter((d) => isConfirmed(retry(d))).length;
   const confirmLeave = () => !unsaved || (leavingRef.current = confirm("Leave without saving your changes?"));
   // Link navigates client-side (no beforeunload), so confirm here too.
   const guardLink = (e: MouseEvent) => { if (!confirmLeave()) e.preventDefault(); };
@@ -231,7 +234,7 @@ export default function AddSongs({ themes, actions, loadError }: { themes: Theme
                 </details>
                 {isReady(d) && (
                   <div className="draft-confirm">
-                    <button className="btn primary compact" type="button" disabled={busy} onClick={() => confirmDrafts((_, j) => j === i)}>
+                    <button className="btn primary compact" type="button" disabled={busy || checking} onClick={() => confirmDrafts((_, j) => j === i)}>
                       Confirm
                     </button>
                     <span className="dash-meta">Check the preview, then confirm to include it when saving.</span>
@@ -245,11 +248,11 @@ export default function AddSongs({ themes, actions, loadError }: { themes: Theme
 
       <div className="upload-actions">
         {ready > 1 && (
-          <button className="btn" type="button" onClick={() => confirmDrafts((d) => isReady(d))} disabled={busy}>
+          <button className="btn" type="button" onClick={() => confirmDrafts((d) => isReady(d))} disabled={busy || checking}>
             Confirm all {ready} ready
           </button>
         )}
-        <button className="btn primary" type="button" onClick={save} disabled={busy || ready + confirmed === 0}>
+        <button className="btn primary" type="button" onClick={save} disabled={busy || checking || ready + confirmed === 0}>
           {busy ? "Saving…" : `Save ${confirmed} ${confirmed === 1 ? "song" : "songs"}`}
         </button>
         {message && <span role="status">{message}</span>}
