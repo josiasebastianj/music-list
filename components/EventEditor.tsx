@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import AppShell from "./AppShell";
+import AddSongDialog from "./AddSongDialog";
 import Icon from "./Icon";
 import TeamDialog from "./TeamDialog";
 import ThemeToggle from "./ThemeToggle";
@@ -82,11 +83,10 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
     return copy;
   }
 
-  function addSong() {
-    const s: Song = { id: uid("song"), title: "", baseKey: "", sections: [] };
+  function addSong(s: Song) {
     update({ ...event, songs: [...event.songs, s] });
     setActiveSongId(s.id);
-    focusId.current = s.id;
+    if (!s.title) focusId.current = s.id;
   }
   function deleteSong() {
     if (!song) return;
@@ -222,12 +222,7 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
           <nav className="song-nav" aria-label="Songs">
             <div className="nav-heading">
               <div className="nav-heading-title">SONGS</div>
-              {!readOnly && (
-                <button className="btn primary compact" type="button" onClick={addSong}>
-                  <Icon name="plus" />
-                  Add Song
-                </button>
-              )}
+              {!readOnly && <AddSongDialog onAdd={addSong} />}
             </div>
             <div className="song-list">
               {event.songs.length === 0 ? (

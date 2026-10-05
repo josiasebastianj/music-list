@@ -3,7 +3,7 @@ export const APP_VERSION = "3.0.0";
 export const colors = ["#8fc5ff", "#93dfb2", "#ffd37d", "#8edbe8", "#f3a5c6", "#f5c58a", "#c5a5f5", "#b6a9f5", "#9cdda9"];
 
 export type Section = { id: string; name: string; color: string; note: string };
-export type Song = { id: string; title: string; baseKey: string; sections: Section[] };
+export type Song = { id: string; title: string; baseKey: string; content: string; librarySongId?: string; sections: Section[] };
 export type Member = { name: string; role: string };
 export type SetlistEvent = { eventName: string; eventDate: string; songs: Song[]; members: Member[] };
 export type EventRow = { event_name: string | null; event_date: string | null; data: unknown; members?: unknown };
@@ -31,7 +31,15 @@ function normalizeSections(sections: unknown): Section[] {
 }
 
 function normalizeSong(song: Loose): Song {
-  return { id: str(song?.id) || uid("song"), title: str(song?.title), baseKey: str(song?.baseKey), sections: normalizeSections(song?.sections) };
+  const librarySongId = str(song?.librarySongId);
+  return {
+    id: str(song?.id) || uid("song"),
+    title: str(song?.title),
+    baseKey: str(song?.baseKey),
+    content: str(song?.content),
+    ...(librarySongId ? { librarySongId } : {}),
+    sections: normalizeSections(song?.sections),
+  };
 }
 
 export function eventFromRow(row: EventRow): SetlistEvent {

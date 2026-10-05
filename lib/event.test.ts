@@ -54,7 +54,7 @@ test("eventFromRow reads team members and cleans bad entries", () => {
 });
 
 test("eventFromRow keeps valid data unchanged", () => {
-  const songs = [{ id: "song-1", title: "Way Maker", baseKey: "E", sections: [{ id: "section-1", name: "Intro", color: "#93dfb2", note: "Soft\nkeys" }] }];
+  const songs = [{ id: "song-1", title: "Way Maker", baseKey: "E", content: "[E]Way maker", librarySongId: "lib-1", sections: [{ id: "section-1", name: "Intro", color: "#93dfb2", note: "Soft\nkeys" }] }];
   assert.deepEqual(eventFromRow({ event_name: "A", event_date: "2026-10-04", data: { songs } }).songs, songs);
 });
 
@@ -68,4 +68,12 @@ test("randomShareToken is URL-safe and unique", () => {
   const a = randomShareToken();
   assert.match(a, /^[A-Za-z0-9_-]{24}$/);
   assert.notEqual(a, randomShareToken());
+});
+
+test("eventFromRow gives old songs empty content and no library id", () => {
+  const event = eventFromRow({ event_name: null, event_date: null, data: { songs: [{ id: "s1", title: "Old", baseKey: "G", sections: [] }, { content: 5, librarySongId: 7 }] } });
+  assert.equal(event.songs[0].content, "");
+  assert.ok(!("librarySongId" in event.songs[0]));
+  assert.equal(event.songs[1].content, "");
+  assert.ok(!("librarySongId" in event.songs[1]));
 });

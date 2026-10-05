@@ -246,3 +246,11 @@ a.btn{text-decoration:none}
 .upload-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .upload-drop:focus-within{border-color:var(--accent);color:var(--text);outline:2px solid var(--accent);outline-offset:2px}
+
+.song-results{list-style:none;margin:0;padding:0;max-height:50vh;overflow-y:auto}
+.song-result{display:flex;flex-direction:column;gap:2px;width:100%;padding:10px 8px;border:0;border-bottom:1px solid var(--line);background:none;color:var(--text);text-align:left}
+.song-result:hover{background:var(--surface-2)}
+.song-result-title{font-weight:700;overflow-wrap:anywhere}
+.song-result-meta{color:var(--muted);font-size:13px}
+.song-result-snippet{color:var(--muted);font-size:13px;overflow-wrap:anywhere}
+.song-result mark{background:var(--accent-soft);color:var(--text);border-radius:3px}
