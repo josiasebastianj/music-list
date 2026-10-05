@@ -44,8 +44,13 @@ export default function TempoControl({ rhythm, bpm, readOnly, onChange }: Props)
           step={1}
           value={bpmText}
           onChange={(e) => {
-            setBpmText(e.target.value);
-            onChange({ bpm: parseBpm(e.target.value) });
+            const text = e.target.value;
+            setBpmText(text);
+            if (text.trim() === "") onChange({ bpm: null });
+            else {
+              const n = parseBpm(text);
+              if (n !== null) onChange({ bpm: n });
+            }
           }}
           onBlur={() => setBpmText(bpm === null ? "" : String(bpm))}
           placeholder="—"

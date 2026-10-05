@@ -80,8 +80,8 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 
 ## Using the app
 
-- **Dashboard:** lists events (name, date, song count), newest first. Each row has **Edit** (or click the title), **Share** (copies the read-only link) and **Delete**. **New event** creates an empty event and opens it.
-- **Editor:** **+ Add Song** opens a search. Type at least 3 letters of the title or any lyric line, then pick a song to import its lyrics, chords and key. **Add blank song** adds an empty one. You can also reorder and delete songs and song details, cycle colours, export a song as PNG. **Team** (under the event date) opens a pop-up to add, edit and remove team members, each with a free-text name and role. **Save** stores the event. **Share** copies the read-only link. **← Dashboard** goes back. The browser warns before you leave with unsaved changes, including with the Back button.
+- **Events** (`/dashboard`): lists events (name, date, song count), newest first. Each row has **Edit** (or click the title), **Share** (copies the read-only link) and **Delete**. **New event** creates an empty event and opens it.
+- **Editor:** **+ Add Song** opens a search. Type at least 3 letters of the title or any lyric line, then pick a song to import its lyrics, chords and key. **Add blank song** adds an empty one. You can also reorder and delete songs and song details, cycle colours, export a song as PNG. **Team** (under the event date) opens a pop-up to add, edit and remove team members, each with a free-text name and role. **Save** stores the event. **Share** copies the read-only link. The **Events**, **Library** and **Theme** links in the top bar go back to those pages. The browser warns before you leave with unsaved changes, including with the Back button.
 - **Song tabs:** **Lyrics Only** (large lyrics, no chords), **Lyrics + Chords** (chords above the words, instrumental bars as `| E . . . |`; **Edit** shows the ChordPro text), **Section Notes** (the song details).
 - **Paste a chord sheet:** after **Add blank song**, open **Lyrics + Chords** and paste a chord sheet copied from the web (chords on their own line above the lyrics). It's converted to ChordPro, and the song's empty title, key and Section Notes are filled in from it. **Undo** restores exactly what you pasted. ChordPro text and plain lyrics are pasted as they are. Some sites lose their chord alignment when copied; if chords land a few letters off, fix them with **Edit**.
 - **Key:** − and + move the song one semitone and rewrite its chords. On a share link they change only your view; **Reset** returns to the event's key.
@@ -112,7 +112,7 @@ On a fresh clone, `npx tsc --noEmit` needs `npm run dev`, `npm run build` or `np
 | `/` | everyone | Redirects to `/dashboard` or `/login`. Old `/?share=<token>` links redirect to `/share/<token>`. |
 | `/login` | logged out | Shared-password login (testing mode) |
 | `/auth/callback` | - | Finishes Google sign-in and email confirmation (unused in testing mode) |
-| `/dashboard` | logged in | Your events: new, edit, share, delete, log out |
+| `/dashboard` | logged in | Events list: new, edit, share, delete, log out |
 | `/events/[id]` | owner | The editor |
 | `/share/[token]` | public | Read-only view of an event |
 | `/library` | logged in | The song list |
