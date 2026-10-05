@@ -39,10 +39,12 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
   const focusId = useRef<string | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const revision = useRef(0);
+  const leavingRef = useRef(false); // set once the user confirmed leaving, so beforeunload doesn't ask again
 
   useEffect(() => {
     if (!dirty) return;
     const warn = (e: BeforeUnloadEvent) => {
+      if (leavingRef.current) return;
       e.preventDefault();
       e.returnValue = "";
     };
@@ -160,7 +162,7 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
     <ThemeToggle />
   ) : (
     <>
-      <SectionNav compact />
+      <SectionNav compact confirmLeave={() => !dirty || (leavingRef.current = confirm("Leave without saving your changes?"))} />
       <button className="btn primary" type="button" onClick={save} disabled={saving === "saving"}>
         {saving === "saving" ? "Saving…" : saving === "saved" ? "Saved" : "Save"}
       </button>

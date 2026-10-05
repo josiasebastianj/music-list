@@ -31,6 +31,7 @@ create policy "songs update" on public.songs for update to authenticated using (
 create policy "songs delete" on public.songs for delete to authenticated using (true);
 create policy "themes all" on public.themes for all to authenticated using (true) with check (true);
 create policy "song_themes all" on public.song_themes for all to authenticated using (true) with check (true);
+grant select, insert, update, delete on public.themes, public.song_themes to authenticated;
 
 -- share links also return the owner (return columns change: drop and recreate; keep the event_name/event_date types as in 003)
 drop function if exists public.get_shared_event(text);

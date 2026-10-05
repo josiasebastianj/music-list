@@ -58,9 +58,9 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 
    - **`003_event_members.sql`** adds the `members` column (a JSON list of `{name, role}`) and recreates `get_shared_event` so share links include the team. If you changed the types in `001`'s `returns table (...)`, make the same change here. Until it runs, saving an event fails with a missing `members` column error.
 
-   - **`004_song_library.sql`** creates the shared `songs` table, a fast search index (`pg_trgm`) and the `search_songs` function. Logged-in users can search and add songs. Editing or deleting library songs is done in the Supabase table editor.
+   - **`004_song_library.sql`** creates the shared `songs` table, a fast search index (`pg_trgm`) and the `search_songs` function. Logged-in users can search and add songs. As of `005`, library songs are edited and deleted in the app (the Library page).
 
-   - **`005_library_details.sql`** adds `events.owner`, `songs.rhythm` and `bpm`, the `themes` and `song_themes` tables, and update/delete for library songs. It recreates `search_songs` and `get_shared_event`. It must run after `004`.
+   - **`005_library_details.sql`** adds `events.owner`, `songs.rhythm` and `bpm`, the `themes` and `song_themes` tables, and update/delete for library songs. It recreates `search_songs` and `get_shared_event`. It must run after `004`. If you ever re-run an older migration, re-run `005` afterwards (re-running `003` drops `owner` from share links).
 
    If you are moving from a live v2.x site, read "Switching over from v2.x" before running `002`.
 
@@ -179,7 +179,8 @@ supabase/migrations/          001_share_function.sql, 002_auth_and_rls.sql, 003_
 
 - Row Level Security makes events owner-only. A signed-in user can read, change and delete only rows where `user_id = auth.uid()`. Logged-out visitors can't read the table at all.
 - In testing mode, everyone shares one account, so everyone with the password can see and change every event that account owns. Sign-ups are turned off in Supabase.
-- Share links go through the `get_shared_event(token)` function. It returns the name, date, data and team members for one share token, and no id or owner. Anyone with the link can read that event, and nobody can change it.
+- Share links go through the `get_shared_event(token)` function. It returns the name, date, data, team members and the free-text Owner for one share token, and no event id or `user_id`. Anyone with the link can read that event, and nobody can change it.
+- Any logged-in user can add, edit and delete library songs, themes and theme links.
 - The app uses only the publishable key. Never put the `service_role` or secret key in this app.
 - `proxy.ts` refreshes the session cookie and sends logged-out visitors to `/login`. That is a convenience. RLS is the security boundary.
 - Events saved before v3.0.0 have `user_id = null`. Their share links still work, but nobody can edit them, and they don't appear on the dashboard.

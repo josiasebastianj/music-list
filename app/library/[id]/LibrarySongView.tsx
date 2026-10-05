@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import ChordSheet from "@/components/ChordSheet";
 import Icon from "@/components/Icon";
+import SectionLayout from "@/components/SectionLayout";
 import SongFields from "@/components/SongFields";
 import SongTabs from "@/components/SongTabs";
 import { parseChordPro } from "@/lib/chordpro";
@@ -13,7 +14,7 @@ import { createClient } from "@/lib/supabase/client";
 
 const noop = () => {};
 
-export default function LibrarySongView({ initial, themes }: { initial: LibrarySong; themes: Theme[] }) {
+export default function LibrarySongView({ initial, themes, actions }: { initial: LibrarySong; themes: Theme[]; actions: ReactNode }) {
   const [song, setSong] = useState(initial);
   const [fields, setFields] = useState<Fields>(() => fieldsFrom(initial));
   const [content, setContent] = useState(initial.content);
@@ -21,11 +22,13 @@ export default function LibrarySongView({ initial, themes }: { initial: LibraryS
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const leavingRef = useRef(false); // set once the user confirmed leaving, so beforeunload doesn't ask again
   const preview = useMemo(() => parseChordPro(content), [content]);
 
   useEffect(() => {
     if (!dirty) return;
     const warn = (e: BeforeUnloadEvent) => {
+      if (leavingRef.current) return;
       e.preventDefault();
       e.returnValue = "";
     };
@@ -102,7 +105,8 @@ export default function LibrarySongView({ initial, themes }: { initial: LibraryS
   const asEventSong = { id: song.id, title: song.title, baseKey: song.song_key, rhythm: song.rhythm ?? "", bpm: song.bpm, content: song.content, sections: sectionNotesFrom(song.content) };
 
   return (
-    <>
+    <SectionLayout current="library" actions={actions} confirmLeave={() => !(editing && dirty) || (leavingRef.current = confirm("Leave without saving your changes?"))}>
+      <main className="dash">
       <div className="dash-head">
         <div>
           {/* plain <a>: a full page load keeps the beforeunload guard working */}
@@ -160,6 +164,7 @@ export default function LibrarySongView({ initial, themes }: { initial: LibraryS
       ) : (
         <SongTabs song={asEventSong} content={song.content} readOnly onContentChange={noop} onSectionsChange={noop} onSongChange={noop} />
       )}
-    </>
+      </main>
+    </SectionLayout>
   );
 }

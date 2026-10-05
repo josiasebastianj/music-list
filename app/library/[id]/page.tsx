@@ -1,6 +1,5 @@
 import { notFound, redirect } from "next/navigation";
 import { LogoutButton } from "@/app/dashboard/DashboardButtons";
-import SectionLayout from "@/components/SectionLayout";
 import ThemeToggle from "@/components/ThemeToggle";
 import { migrationHint } from "@/lib/event";
 import { byName, type LibrarySong, type Theme } from "@/lib/library";
@@ -27,10 +26,6 @@ export default async function LibrarySongPage({ params }: { params: Promise<{ id
   const themes = ((themesRes.data ?? []) as Theme[]).sort(byName);
 
   return (
-    <SectionLayout current="library" actions={<><ThemeToggle /><LogoutButton /></>}>
-      <main className="dash">
-        <LibrarySongView initial={song} themes={themes} />
-      </main>
-    </SectionLayout>
+  <LibrarySongView initial={song} themes={themes} actions={<><ThemeToggle /><LogoutButton /></>} />
   );
 }

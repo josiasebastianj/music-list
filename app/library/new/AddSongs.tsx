@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type ChangeEvent, type DragEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type DragEvent, type ReactNode } from "react";
 import ChordSheet from "@/components/ChordSheet";
 import Icon from "@/components/Icon";
+import SectionLayout from "@/components/SectionLayout";
 import SongFields from "@/components/SongFields";
 import { keyStep, parseChordPro } from "@/lib/chordpro";
 import { migrationHint } from "@/lib/event";
@@ -12,7 +13,7 @@ import { createClient } from "@/lib/supabase/client";
 
 const ACCEPT = ".cho,.chopro,.pro,.chordpro,.txt";
 
-export default function AddSongs({ themes }: { themes: Theme[] }) {
+export default function AddSongs({ themes, actions, loadError }: { themes: Theme[]; actions: ReactNode; loadError?: string }) {
   const [mode, setMode] = useState<"paste" | "files">("paste");
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [pasted, setPasted] = useState("");
@@ -20,6 +21,20 @@ export default function AddSongs({ themes }: { themes: Theme[] }) {
   const [over, setOver] = useState(false);
   const [checking, setChecking] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  const leavingRef = useRef(false); // set once the user confirmed leaving, so beforeunload doesn't ask again
+  const unsaved = pasted.trim() !== "" || drafts.some((d) => !d.result?.startsWith(SAVED));
+
+  useEffect(() => {
+    if (!unsaved) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      if (leavingRef.current) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [unsaved]);
 
   async function addDrafts(read: Draft[]) {
     if (!read.length) return;
@@ -91,8 +106,10 @@ export default function AddSongs({ themes }: { themes: Theme[] }) {
   async function save() {
     setBusy(true);
     setMessage(null);
+    const retry = (d: Draft) => (d.result?.startsWith("Failed:") ? { ...d, result: undefined } : d);
+    setDrafts((cur) => cur.map(retry));
     const supabase = createClient();
-    const snapshot = drafts;
+    const snapshot = drafts.map(retry);
     let added = 0;
     let skipped = 0;
     for (let i = 0; i < snapshot.length; i++) {
@@ -109,7 +126,7 @@ export default function AddSongs({ themes }: { themes: Theme[] }) {
         added++;
         if (d.fields.themeIds.length) {
           const { error: themeError } = await supabase.from("song_themes").insert(d.fields.themeIds.map((theme_id) => ({ song_id: data.id, theme_id })));
-          if (themeError) result = `Saved, but themes failed: ${migrationHint(themeError.message)}`;
+          if (themeError) result = `Saved, but its themes failed: ${migrationHint(themeError.message)}. Fix its themes on its library page.`;
         }
       }
       if (result !== SAVED && !result.startsWith("Saved")) skipped++;
@@ -122,7 +139,16 @@ export default function AddSongs({ themes }: { themes: Theme[] }) {
   const ready = drafts.filter(isReady).length;
 
   return (
-    <>
+    <SectionLayout current="library" actions={actions} confirmLeave={() => !unsaved || (leavingRef.current = confirm("Leave without saving your changes?"))}>
+      <main className="dash">
+        <div className="dash-head">
+          <div>
+            <div className="eyebrow"><Link href="/library">LIBRARY</Link></div>
+            <h1 className="dash-title">Add songs</h1>
+            <div className="dash-sub">Paste a chord sheet or upload ChordPro / text files. Check the preview, then save to the library.</div>
+          </div>
+        </div>
+        {loadError && <div className="share-banner error" role="alert">Could not load themes: {loadError}</div>}
       <div className="song-tabs" role="tablist" aria-label="How to add songs">
         <button type="button" role="tab" aria-selected={mode === "paste"} className={`song-tab${mode === "paste" ? " active" : ""}`} onClick={() => setMode("paste")}>Paste text</button>
         <button type="button" role="tab" aria-selected={mode === "files"} className={`song-tab${mode === "files" ? " active" : ""}`} onClick={() => setMode("files")}>Upload files</button>
@@ -198,6 +224,7 @@ export default function AddSongs({ themes }: { themes: Theme[] }) {
         {message && <span role="status">{message}</span>}
         {drafts.some((d) => d.result?.startsWith(SAVED)) && <Link className="btn" href="/library">Back to Library</Link>}
       </div>
-    </>
+      </main>
+    </SectionLayout>
   );
 }

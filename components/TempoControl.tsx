@@ -12,6 +12,11 @@ type Props = {
 
 export default function TempoControl({ rhythm, bpm, readOnly, onChange }: Props) {
   const [bpmText, setBpmText] = useState(bpm === null ? "" : String(bpm));
+  const [lastBpm, setLastBpm] = useState(bpm);
+  if (bpm !== lastBpm) {
+    setLastBpm(bpm);
+    setBpmText(bpm === null ? "" : String(bpm));
+  }
 
   if (readOnly) {
     if (!rhythm && bpm === null) return null;

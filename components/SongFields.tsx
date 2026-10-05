@@ -56,7 +56,7 @@ export default function SongFields({ idPrefix, value, themes, disabled = false, 
         </fieldset>
       ) : (
         <p className="field-hint field-wide">
-          No themes yet. Add some on the <a href="/themes">Theme</a> page.
+          No themes yet. Add some on the <a href="/themes" target="_blank" rel="noopener">Theme</a> page.
         </p>
       )}
     </div>
