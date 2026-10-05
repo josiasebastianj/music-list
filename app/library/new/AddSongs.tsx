@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type ChangeEvent, type DragEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type DragEvent, type MouseEvent, type ReactNode } from "react";
 import ChordSheet from "@/components/ChordSheet";
 import Icon from "@/components/Icon";
 import SectionLayout from "@/components/SectionLayout";
@@ -137,13 +137,16 @@ export default function AddSongs({ themes, actions, loadError }: { themes: Theme
   }
 
   const ready = drafts.filter(isReady).length;
+  const confirmLeave = () => !unsaved || (leavingRef.current = confirm("Leave without saving your changes?"));
+  // Link navigates client-side (no beforeunload), so confirm here too.
+  const guardLink = (e: MouseEvent) => { if (!confirmLeave()) e.preventDefault(); };
 
   return (
-    <SectionLayout current="library" actions={actions} confirmLeave={() => !unsaved || (leavingRef.current = confirm("Leave without saving your changes?"))}>
+    <SectionLayout current="library" actions={actions} confirmLeave={confirmLeave}>
       <main className="dash">
         <div className="dash-head">
           <div>
-            <div className="eyebrow"><Link href="/library">LIBRARY</Link></div>
+            <div className="eyebrow"><Link href="/library" onClick={guardLink}>LIBRARY</Link></div>
             <h1 className="dash-title">Add songs</h1>
             <div className="dash-sub">Paste a chord sheet or upload ChordPro / text files. Check the preview, then save to the library.</div>
           </div>
@@ -222,7 +225,7 @@ export default function AddSongs({ themes, actions, loadError }: { themes: Theme
           {busy ? "Saving…" : `Save ${ready} ${ready === 1 ? "song" : "songs"}`}
         </button>
         {message && <span role="status">{message}</span>}
-        {drafts.some((d) => d.result?.startsWith(SAVED)) && <Link className="btn" href="/library">Back to Library</Link>}
+        {drafts.some((d) => d.result?.startsWith(SAVED)) && <Link className="btn" href="/library" onClick={guardLink}>Back to Library</Link>}
       </div>
       </main>
     </SectionLayout>

@@ -1,3 +1,5 @@
+"use client";
+
 import Icon, { type IconName } from "./Icon";
 
 export type SectionId = "events" | "library" | "themes";
@@ -20,6 +22,8 @@ export default function SectionNav({ current, compact = false, confirmLeave }: {
           aria-current={l.id === current ? "page" : undefined}
           aria-label={compact ? l.label : undefined}
           onClick={(e) => {
+            // Ctrl/Cmd/Shift-click opens a new tab: the page stays, so don't ask (or mark it as leaving).
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
             if (confirmLeave && !confirmLeave()) e.preventDefault();
           }}
         >
