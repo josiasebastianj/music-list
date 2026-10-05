@@ -161,3 +161,14 @@ test("a converted sheet parses back into sections", () => {
   assert.equal(song.title, "Way Maker");
   assert.deepEqual(song.sections.map((s) => s.label), ["Intro", "Verse 1"]);
 });
+
+test("fromChordsAboveLyrics keeps lyric lines ending in a colon", () => {
+  assert.equal(fromChordsAboveLyrics("Song\nD\nAnd He said:\nG\nCome to me", "f"), "{title: Song}\n[D]And He said:\n[G]Come to me");
+  assert.equal(fromChordsAboveLyrics("Song\nE  B\nLa la", "f"), "{title: Song}\n[E]La [B]la");
+  assert.equal(fromChordsAboveLyrics("Song\nChorus:\nSing", "f"), "{title: Song}\n{comment: Chorus}\nSing");
+});
+
+test("parseChordPro skips tab blocks", () => {
+  const song = parseChordPro("{sov: Verse}\nHello [E]world\n{sot}\ne|--0--|\nB|--1--|\n{eot}\nAgain");
+  assert.deepEqual(lyricLines(song), [{ label: "Verse", lines: ["Hello world", "Again"] }]);
+});

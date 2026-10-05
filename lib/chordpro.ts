@@ -83,7 +83,7 @@ const SECTION_STARTS: Record<string, { kind: "lyrics" | "grid"; label: string }>
   start_of_grid: { kind: "grid", label: "" },
   sog: { kind: "grid", label: "" },
 };
-const SECTION_ENDS = new Set(["end_of_verse", "eov", "end_of_chorus", "eoc", "end_of_bridge", "eob", "end_of_grid", "eog"]);
+const SECTION_ENDS = new Set(["end_of_verse", "eov", "end_of_chorus", "eoc", "end_of_bridge", "eob", "end_of_grid", "eog", "end_of_tab", "eot"]);
 const HEADING_DIRECTIVES = new Set(["comment", "c", "comment_italic", "ci"]);
 
 function parseSegments(line: string): Segment[] {
@@ -114,6 +114,7 @@ export function parseChordPro(text: string): ParsedSong {
   };
   let current: ParsedSection | null = null;
   let explicit = false; // opened by start_of_*: blank lines don't split it
+  let inTab = false; // skip lines in tab blocks
   for (const raw of text.replace(/\r\n?/g, "\n").split("\n")) {
     const trimmed = raw.trim();
     const d = DIRECTIVE_RE.exec(trimmed);
@@ -123,6 +124,8 @@ export function parseChordPro(text: string): ParsedSong {
       if (name === "title" || name === "t") song.title = value;
       else if (name === "artist") song.artist = value;
       else if (name === "key") song.key = value;
+      else if (name === "start_of_tab" || name === "sot") inTab = true;
+      else if (name === "end_of_tab" || name === "eot") inTab = false;
       else if (SECTION_STARTS[name]) {
         current = open(value || SECTION_STARTS[name].label, SECTION_STARTS[name].kind);
         explicit = true;
@@ -135,6 +138,7 @@ export function parseChordPro(text: string): ParsedSong {
       }
       continue;
     }
+    if (inTab) continue;
     if (!trimmed) {
       if (current && !explicit && !current.label && current.lines.length) current = null;
       continue;
@@ -191,7 +195,7 @@ export function guessKey(song: ParsedSong): string | null {
   return null;
 }
 
-const HEADING_RE = /^(intro|verse|pre-?chorus|chorus|bridge|interlude|instrumental|outro|tag|ending|refrain|reff?)(\s*\d+)?\.?$/i;
+const HEADING_RE = /^(intro|verse|pre-?chorus|chorus|bridge|interlude|instrumental|outro|tag|ending|refrain|reff?)(\s*\d+)?[.:]?$/i;
 const KEY_LINE_RE = /^key\s*[:=]\s*([A-G](?:#|b)?m?)\s*$/i;
 const MARKER_RE = /^(\|+|\.|-|\/|\(?x\d+\)?)$/i;
 
@@ -203,9 +207,28 @@ function expandTabs(line: string) {
 
 function headingLabel(trimmed: string): string | null {
   const inner = trimmed.replace(/^[[(](.*)[\])]$/, "$1").trim();
-  if (HEADING_RE.test(inner)) return inner.replace(/\.$/, "");
-  if (inner.endsWith(":") && inner.length <= 40 && !inner.slice(0, -1).includes(":")) return inner.slice(0, -1).trim();
+  if (HEADING_RE.test(inner)) return inner.replace(/[.:]$/, "");
   return null;
+}
+
+function isHeadingAt(lines: string[], i: number): boolean {
+  const trimmed = lines[i].trim();
+  const label = headingLabel(trimmed);
+  if (label !== null) return true;
+  // Colon-heading check: only if not directly below a chord line
+  if (trimmed.endsWith(":") && trimmed.length <= 40 && !trimmed.slice(0, -1).includes(":")) {
+    const prevLine = i > 0 ? lines[i - 1] : null;
+    if (!prevLine || !isChordLine(prevLine)) {
+      // Check if next non-blank line is a chord line or none
+      for (let j = i + 1; j < lines.length; j++) {
+        const next = lines[j].trim();
+        if (!next) continue;
+        return isChordLine(lines[j]);
+      }
+      return true; // No next non-blank line
+    }
+  }
+  return false;
 }
 
 function isChordLine(line: string) {
@@ -241,7 +264,7 @@ export function fromChordsAboveLyrics(text: string, fallbackTitle: string): stri
   });
   let title = fallbackTitle;
   const first = lines.findIndex((l, i) => !used.has(i) && l.trim() !== "");
-  if (first >= 0 && !isChordLine(lines[first]) && headingLabel(lines[first].trim()) === null) {
+  if (first >= 0 && !isChordLine(lines[first]) && !isHeadingAt(lines, first)) {
     title = lines[first].trim();
     used.add(first);
   }
@@ -255,14 +278,14 @@ export function fromChordsAboveLyrics(text: string, fallbackTitle: string): stri
       out.push("");
       continue;
     }
-    const label = headingLabel(trimmed);
-    if (label !== null) {
+    if (isHeadingAt(lines, i)) {
+      const label = headingLabel(trimmed);
       out.push(`{comment: ${label}}`);
       continue;
     }
     if (isChordLine(line)) {
       const next = lines[i + 1];
-      if (!trimmed.includes("|") && next !== undefined && !used.has(i + 1) && next.trim() && !isChordLine(next) && headingLabel(next.trim()) === null) {
+      if (!trimmed.includes("|") && next !== undefined && !used.has(i + 1) && next.trim() && !isChordLine(next) && !isHeadingAt(lines, i + 1)) {
         out.push(mergeChords(line, next));
         i++;
         continue;
