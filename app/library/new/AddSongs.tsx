@@ -8,10 +8,13 @@ import SectionLayout from "@/components/SectionLayout";
 import SongFields from "@/components/SongFields";
 import { keyStep, parseChordPro } from "@/lib/chordpro";
 import { migrationHint } from "@/lib/event";
-import { SAVED, draftFrom, draftStatus, identity, isReady, toSongRow, type Draft, type Fields, type Theme } from "@/lib/library";
+import { SAVED, draftFrom, draftStatus, identity, isConfirmed, isReady, toSongRow, type Draft, type Fields, type Theme } from "@/lib/library";
 import { createClient } from "@/lib/supabase/client";
 
 const ACCEPT = ".cho,.chopro,.pro,.chordpro,.txt";
+
+// The paste box's current card: not confirmed or saved yet.
+const isOpenPaste = (d: Draft) => !!d.pasted && !d.confirmed && !d.result;
 
 export default function AddSongs({ themes, actions, loadError }: { themes: Theme[]; actions: ReactNode; loadError?: string }) {
   const [mode, setMode] = useState<"paste" | "files">("paste");
@@ -36,7 +39,8 @@ export default function AddSongs({ themes, actions, loadError }: { themes: Theme
     return () => window.removeEventListener("beforeunload", warn);
   }, [unsaved]);
 
-  async function addDrafts(read: Draft[]) {
+  // replacePasted: drop the paste box's previous unconfirmed card, so Preview again updates it instead of adding a copy.
+  async function addDrafts(read: Draft[], replacePasted = false) {
     if (!read.length) return;
     setMessage(null);
     setChecking(true);
@@ -47,7 +51,8 @@ export default function AddSongs({ themes, actions, loadError }: { themes: Theme
       if (error) setMessage(`Couldn't check the library for duplicates: ${migrationHint(error.message)}. Duplicates will be skipped when saving.`);
       else existing = data ?? [];
     }
-    setDrafts((current) => {
+    setDrafts((all) => {
+      const current = replacePasted ? all.filter((d) => !isOpenPaste(d)) : all;
       const counts = (d: Draft) => !d.unreadable && !!d.fields.title.trim();
       const seen = new Set([...existing.map((s) => identity(s.title, s.artist ?? "")), ...current.filter(counts).map((d) => identity(d.fields.title, d.fields.artist))]);
       const marked = read.map((d) => {
@@ -77,11 +82,15 @@ export default function AddSongs({ themes, actions, loadError }: { themes: Theme
     if (!busy) void onFiles([...e.dataTransfer.files]);
   }
 
+  // The text stays in the box until its card is confirmed.
   async function onPreview() {
     if (!pasted.trim()) return;
-    const text = pasted;
-    await addDrafts([draftFrom("Pasted text", text, "")]);
-    setPasted((cur) => (cur === text ? "" : cur));
+    await addDrafts([{ ...draftFrom("Pasted text", pasted, ""), pasted: true }], true);
+  }
+
+  function confirmDrafts(which: (d: Draft, i: number) => boolean) {
+    if (drafts.some((d, i) => which(d, i) && d.pasted)) setPasted("");
+    setDrafts((current) => current.map((d, i) => (which(d, i) ? { ...d, confirmed: true } : d)));
   }
 
   const edit = (i: number, patch: Partial<Draft>) => setDrafts((current) => current.map((d, j) => (j === i ? { ...d, ...patch } : d)));
@@ -94,7 +103,7 @@ export default function AddSongs({ themes, actions, loadError }: { themes: Theme
               ...d,
               fields: { ...d.fields, ...patch },
               ...("title" in patch || "artist" in patch ? { duplicate: false } : {}),
-              ...(d.result?.startsWith(SAVED) ? {} : { result: undefined }),
+              ...(d.result?.startsWith(SAVED) ? {} : { result: undefined, confirmed: false }),
               ...("key" in patch ? { keyConfirmed: true } : {}),
             }
           : d,
@@ -104,6 +113,11 @@ export default function AddSongs({ themes, actions, loadError }: { themes: Theme
   const remove = (i: number) => setDrafts((current) => current.filter((_, j) => j !== i));
 
   async function save() {
+    if (confirmed === 0) {
+      alert("Confirm the previews you want to save first.");
+      return;
+    }
+    if (ready > 0 && !confirm(`${ready} previewed ${ready === 1 ? "song isn't" : "songs aren't"} confirmed and won't be saved. Save the confirmed ${confirmed === 1 ? "song" : "songs"} anyway?`)) return;
     setBusy(true);
     setMessage(null);
     const retry = (d: Draft) => (d.result?.startsWith("Failed:") ? { ...d, result: undefined } : d);
@@ -114,7 +128,7 @@ export default function AddSongs({ themes, actions, loadError }: { themes: Theme
     let skipped = 0;
     for (let i = 0; i < snapshot.length; i++) {
       const d = snapshot[i];
-      if (!isReady(d)) {
+      if (!isConfirmed(d)) {
         if (!d.result) skipped++;
         continue;
       }
@@ -137,6 +151,7 @@ export default function AddSongs({ themes, actions, loadError }: { themes: Theme
   }
 
   const ready = drafts.filter(isReady).length;
+  const confirmed = drafts.filter(isConfirmed).length;
   const confirmLeave = () => !unsaved || (leavingRef.current = confirm("Leave without saving your changes?"));
   // Link navigates client-side (no beforeunload), so confirm here too.
   const guardLink = (e: MouseEvent) => { if (!confirmLeave()) e.preventDefault(); };
@@ -148,7 +163,7 @@ export default function AddSongs({ themes, actions, loadError }: { themes: Theme
           <div>
             <div className="eyebrow"><Link href="/library" onClick={guardLink}>LIBRARY</Link></div>
             <h1 className="dash-title">Add songs</h1>
-            <div className="dash-sub">Paste a chord sheet or upload ChordPro / text files. Check the preview, then save to the library.</div>
+            <div className="dash-sub">Paste a chord sheet or upload ChordPro / text files. Check each preview, confirm it, then save to the library.</div>
           </div>
         </div>
         {loadError && <div className="share-banner error" role="alert">Could not load themes: {loadError}</div>}
@@ -168,7 +183,7 @@ export default function AddSongs({ themes, actions, loadError }: { themes: Theme
             spellCheck={false}
             disabled={busy || checking}
           />
-          <button className="btn primary" type="button" onClick={onPreview} disabled={busy || checking || !pasted.trim()}>Preview</button>
+          <button className="btn primary" type="button" onClick={onPreview} disabled={busy || checking || !pasted.trim()}>{drafts.some(isOpenPaste) ? "Update preview" : "Preview"}</button>
         </div>
       ) : (
         <label
@@ -214,6 +229,14 @@ export default function AddSongs({ themes, actions, loadError }: { themes: Theme
                   <summary>Preview</summary>
                   <ChordSheet parsed={parseChordPro(d.content)} />
                 </details>
+                {isReady(d) && (
+                  <div className="draft-confirm">
+                    <button className="btn primary compact" type="button" disabled={busy} onClick={() => confirmDrafts((_, j) => j === i)}>
+                      Confirm
+                    </button>
+                    <span className="dash-meta">Check the preview, then confirm to include it when saving.</span>
+                  </div>
+                )}
               </article>
             );
           })}
@@ -221,8 +244,13 @@ export default function AddSongs({ themes, actions, loadError }: { themes: Theme
       )}
 
       <div className="upload-actions">
-        <button className="btn primary" type="button" onClick={save} disabled={busy || ready === 0}>
-          {busy ? "Saving…" : `Save ${ready} ${ready === 1 ? "song" : "songs"}`}
+        {ready > 1 && (
+          <button className="btn" type="button" onClick={() => confirmDrafts((d) => isReady(d))} disabled={busy}>
+            Confirm all {ready} ready
+          </button>
+        )}
+        <button className="btn primary" type="button" onClick={save} disabled={busy || ready + confirmed === 0}>
+          {busy ? "Saving…" : `Save ${confirmed} ${confirmed === 1 ? "song" : "songs"}`}
         </button>
         {message && <span role="status">{message}</span>}
         {drafts.some((d) => d.result?.startsWith(SAVED)) && <Link className="btn" href="/library" onClick={guardLink}>Back to Library</Link>}

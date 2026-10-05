@@ -1,4 +1,4 @@
-export const APP_VERSION = "3.2.0";
+export const APP_VERSION = "3.3.0";
 
 export const colors = ["#8fc5ff", "#93dfb2", "#ffd37d", "#8edbe8", "#f3a5c6", "#f5c58a", "#c5a5f5", "#b6a9f5", "#9cdda9"];
 
@@ -63,6 +63,31 @@ export function formatEventDate(date: string) {
   return d.toLocaleDateString("en-US", { day: "2-digit", month: "long", year: "numeric" });
 }
 
+// "2026-10-04" → "2026-10"; "" when there's no usable date.
+export const monthKey = (date: string | null) => (date && /^\d{4}-\d{2}/.test(date) ? date.slice(0, 7) : "");
+
+export function formatMonth(key: string) {
+  return new Date(`${key}-01T00:00:00`).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+
+type ListedEvent = { event_date: string | null; owner: string | null };
+
+export function ownerOptions(events: ListedEvent[]) {
+  return [...new Set(events.map((e) => (e.owner ?? "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+}
+
+// Owner and month ("" = any), then by event date; undated events always last.
+export function filterEvents<T extends ListedEvent>(events: T[], { owner, month, ascending }: { owner: string; month: string; ascending: boolean }): T[] {
+  return events
+    .filter((e) => (!owner || (e.owner ?? "").trim() === owner) && (!month || monthKey(e.event_date) === month))
+    .sort((a, b) => {
+      const x = a.event_date ?? "";
+      const y = b.event_date ?? "";
+      if (!x || !y) return x ? -1 : y ? 1 : 0;
+      return ascending ? x.localeCompare(y) : y.localeCompare(x);
+    });
+}
+
 export function randomShareToken() {
   const bytes = new Uint8Array(18);
   crypto.getRandomValues(bytes);
@@ -71,7 +96,9 @@ export function randomShareToken() {
 
 // Errors caused by migration 005 not having been run get a pointer to the fix.
 export function migrationHint(message: string): string {
-  return /(owner|rhythm|bpm|themes|song_themes)/i.test(message) && /(does not exist|schema cache|could not find)/i.test(message)
+  if (!/(does not exist|schema cache|could not find)/i.test(message)) return message;
+  if (/songs\.updated_at/i.test(message)) return `${message} — run supabase/migrations/006_song_updated_at.sql in the Supabase SQL Editor.`;
+  return /(owner|rhythm|bpm|themes|song_themes)/i.test(message)
     ? `${message} — run supabase/migrations/005_library_details.sql in the Supabase SQL Editor.`
     : message;
 }

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { SAVED, byName, byTitle, draftFrom, draftStatus, songMetaLine, toSongRow, validateFields, type Fields } from "./library.ts";
+import { SAVED, byName, byTitle, draftFrom, draftStatus, isConfirmed, isReady, songMetaLine, toSongRow, validateFields, type Fields } from "./library.ts";
 
 const ok: Fields = { title: "Way Maker", artist: "Sinach", key: "E", rhythm: "4/4", bpm: "68", themeIds: [] };
 
@@ -64,4 +64,24 @@ test("draftStatus reports unreadable, duplicate, title and bpm problems", () => 
   assert.equal(draftStatus({ ...ok, fields: { ...ok.fields, title: "" } }).text, "Needs a title");
   assert.equal(draftStatus({ ...ok, fields: { ...ok.fields, bpm: "500" } }).text, "BPM must be a whole number from 20 to 300.");
   assert.equal(draftStatus({ ...ok, result: SAVED }).text, SAVED);
+});
+
+test("draftFrom defaults rhythm to 4/4 and leaves BPM empty", () => {
+  const d = draftFrom("p", "Song\nKey: G\nG\nHi", "");
+  assert.equal(d.fields.rhythm, "4/4");
+  assert.equal(d.fields.bpm, "");
+  assert.equal(draftFrom("p", "Song\nKey: G\nTime: 6/8\nG\nHi", "").fields.rhythm, "6/8");
+});
+
+test("a ready draft must be confirmed before it is saved", () => {
+  const d = draftFrom("p", "Song\nKey: G\nG\nHi", "");
+  assert.equal(d.confirmed, false);
+  assert.ok(isReady(d));
+  assert.ok(!isConfirmed(d));
+  const c = { ...d, confirmed: true };
+  assert.equal(draftStatus(c).text, "Confirmed");
+  assert.ok(isConfirmed(c));
+  assert.ok(!isReady(c));
+  assert.equal(draftStatus({ ...c, fields: { ...c.fields, title: "" } }).text, "Needs a title");
+  assert.equal(draftStatus({ ...c, result: SAVED }).text, SAVED);
 });

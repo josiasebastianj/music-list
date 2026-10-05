@@ -6,17 +6,24 @@ import { songMetaLine, type LibrarySong, type Theme } from "@/lib/library";
 
 type Row = Omit<LibrarySong, "content">;
 
+function formatUpdated(iso?: string) {
+  const d = iso ? new Date(iso) : null;
+  return d && !Number.isNaN(d.getTime()) ? d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "";
+}
+
 export default function LibraryList({ songs, themes }: { songs: Row[]; themes: Theme[] }) {
   const [query, setQuery] = useState("");
-  const [themeId, setThemeId] = useState("");
+  const [themeIds, setThemeIds] = useState<string[]>([]);
   const shown = useMemo(() => {
     const q = normalizeSearch(query);
     return songs.filter(
       (s) =>
-        (!themeId || s.themes.some((t) => t.id === themeId)) &&
+        (!themeIds.length || s.themes.some((t) => themeIds.includes(t.id))) &&
         (!q || `${normalizeSearch(`${s.title} ${s.artist ?? ""}`)} ${s.search_text}`.includes(q)),
     );
-  }, [songs, query, themeId]);
+  }, [songs, query, themeIds]);
+
+  const toggle = (id: string) => setThemeIds((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
 
   if (songs.length === 0) {
     return (
@@ -33,13 +40,21 @@ export default function LibraryList({ songs, themes }: { songs: Row[]; themes: T
     <>
       <div className="lib-filters">
         <input className="team-input" type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filter by title, artist or lyrics" aria-label="Filter songs" />
-        <select className="team-input lib-theme-filter" value={themeId} onChange={(e) => setThemeId(e.target.value)} aria-label="Filter by theme">
-          <option value="">All themes</option>
-          {themes.map((t) => (
-            <option key={t.id} value={t.id}>{t.name}</option>
-          ))}
-        </select>
       </div>
+      {themes.length > 0 && (
+        <fieldset className="theme-chips lib-theme-chips">
+          <legend className="sr-only">Show songs with these themes</legend>
+          {themes.map((t) => (
+            <label key={t.id} className={`theme-chip toggle${themeIds.includes(t.id) ? " on" : ""}`}>
+              <input type="checkbox" className="sr-only" checked={themeIds.includes(t.id)} onChange={() => toggle(t.id)} />
+              {t.name}
+            </label>
+          ))}
+          {themeIds.length > 0 && (
+            <button className="btn compact" type="button" onClick={() => setThemeIds([])}>Clear</button>
+          )}
+        </fieldset>
+      )}
       {shown.length === 0 ? (
         <p className="lyrics-empty">No songs match.</p>
       ) : (
@@ -57,6 +72,11 @@ export default function LibraryList({ songs, themes }: { songs: Row[]; themes: T
                   </span>
                 )}
               </a>
+              {s.updated_at && (
+                <span className="dash-meta lib-updated" suppressHydrationWarning>
+                  Updated {formatUpdated(s.updated_at)}
+                </span>
+              )}
             </li>
           ))}
         </ul>

@@ -14,6 +14,7 @@ export type LibrarySong = {
   content: string;
   search_text: string;
   themes: Theme[];
+  updated_at?: string; // from migration 006
 };
 
 export const byTitle = <T extends { title: string }>(a: T, b: T) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
@@ -64,6 +65,8 @@ export type Draft = {
   sections: string[];
   unreadable: boolean;
   duplicate: boolean;
+  confirmed: boolean; // the user checked the preview; only confirmed drafts are saved
+  pasted?: boolean; // made from the paste box (Preview again replaces it until confirmed)
   result?: string;
 };
 
@@ -84,7 +87,7 @@ export function draftFrom(label: string, raw: string, fallbackTitle: string): Dr
       title: parsed.title,
       artist: parsed.artist,
       key: parsed.key || guessKey(parsed) || "",
-      rhythm: meta.rhythm,
+      rhythm: meta.rhythm || "4/4",
       bpm: meta.bpm === null ? "" : String(meta.bpm),
       themeIds: [],
     },
@@ -93,6 +96,7 @@ export function draftFrom(label: string, raw: string, fallbackTitle: string): Dr
     sections: parsed.sections.map((s) => s.label).filter(Boolean),
     unreadable: !parsed.sections.some((s) => s.lines.length > 0),
     duplicate: false,
+    confirmed: false,
   };
 }
 
@@ -104,7 +108,9 @@ export function draftStatus(d: Draft): { text: string; ok: boolean } {
   if (!keyStep(d.fields.key, 0) || !d.keyConfirmed) return { text: "Needs a key", ok: false };
   const problem = validateFields(d.fields);
   if (problem) return { text: problem, ok: false };
-  return { text: "Ready", ok: true };
+  return d.confirmed ? { text: "Confirmed", ok: true } : { text: "Ready", ok: true };
 }
 
+// Ready = checked out fine but not confirmed yet; Confirmed = will be saved.
 export const isReady = (d: Draft) => draftStatus(d).text === "Ready";
+export const isConfirmed = (d: Draft) => draftStatus(d).text === "Confirmed";

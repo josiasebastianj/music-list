@@ -15,7 +15,7 @@ export default async function LibraryPage() {
   if (!user) redirect("/login");
 
   const [songsRes, themesRes] = await Promise.all([
-    supabase.from("songs").select("id,title,artist,song_key,rhythm,bpm,search_text,themes(id,name)"),
+    supabase.from("songs").select("id,title,artist,song_key,rhythm,bpm,search_text,updated_at,themes(id,name)"),
     supabase.from("themes").select("id,name"),
   ]);
   const error = songsRes.error ?? themesRes.error;
