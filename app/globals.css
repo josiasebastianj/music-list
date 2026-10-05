@@ -279,3 +279,11 @@ a.btn{text-decoration:none}
 .paste-note{margin:0 auto 0 0;color:var(--muted);font-size:13px}
 .link-btn{padding:0;border:0;background:none;color:var(--accent);font-weight:700;text-decoration:underline;cursor:pointer}
 .lyrics-toolbar{gap:12px;align-items:center}
+
+.brand{gap:10px}
+.brand-logo{display:block;flex:none;width:auto;height:36px}
+.brand-name,.app-footer-brand{font-family:var(--sans);font-weight:800;letter-spacing:.04em}
+.brand-name span,.app-footer-brand span{font-weight:400}
+.brand-hero{display:block;width:min(280px,100%);height:auto;margin:0 auto 4px}
+:root[data-theme="dark"] .brand-logo,:root[data-theme="dark"] .brand-hero{filter:brightness(1.6)}
+@media(max-width:680px){.brand-logo{height:30px}.brand-name{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}}

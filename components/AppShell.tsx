@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { ReactNode } from "react";
 import { APP_VERSION } from "@/lib/event";
 
@@ -6,6 +7,7 @@ export default function AppShell({ actions, className = "", children }: { action
     <div className={`app ${className}`.trim()}>
       <header className="app-topbar">
         <div className="brand">
+          <Image className="brand-logo" src="/brand/mdchord-mark.png" alt="" width={63} height={36} priority />
           <div className="brand-name">MD<span>CHORD</span></div>
           <div className="brand-divider" />
           <div className="brand-tagline">One Church. One Sound. One Jesus.</div>
