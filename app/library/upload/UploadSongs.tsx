@@ -130,7 +130,7 @@ export default function UploadSongs() {
         <Icon name="plus" />
         <strong>Drop song files here, or click to choose</strong>
         <span>.cho, .chopro, .pro, .chordpro or .txt — several at once</span>
-        <input type="file" multiple accept={ACCEPT} onChange={onPick} hidden />
+        <input type="file" multiple accept={ACCEPT} onChange={onPick} className="sr-only" aria-label="Choose song files" />
       </label>
 
       {rows.length > 0 && (
