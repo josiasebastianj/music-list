@@ -310,3 +310,18 @@ a.btn{text-decoration:none}
 .lib-filters .lib-theme-filter{flex:0 1 200px}
 .theme-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
 .theme-chip{padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:700}
+.song-fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px 12px;margin:12px 0}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0;color:var(--muted);font-size:12px;font-weight:700}
+.field input{min-width:0;padding:8px 10px;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--text);font-size:14px;font-weight:400;outline:none}
+.field input:focus{border-color:var(--accent)}
+.field-title{grid-column:span 2}
+.field-wide{grid-column:1/-1}
+.field-hint{color:var(--muted);font-size:12px;font-weight:400}
+.theme-picker{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;border:0}
+.theme-picker legend{margin-bottom:6px;padding:0}
+.theme-chip.toggle{border:1px solid var(--line-strong);background:var(--surface-2);color:var(--text);cursor:pointer}
+.theme-chip.toggle.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.theme-chip.toggle:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.lib-editor .chord-editor{min-height:280px}
+.lib-preview{margin-top:16px;padding:16px;border:1px dashed var(--line-strong);border-radius:var(--r-sm)}
+@media(max-width:680px){.field-title{grid-column:1/-1}}

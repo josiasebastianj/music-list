@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test lib/event.test.ts lib/chordpro.test.ts"
+    "test": "node --test lib/event.test.ts lib/chordpro.test.ts lib/library.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
