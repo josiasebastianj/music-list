@@ -1,6 +1,6 @@
 # setlist.app
 
-**Version:** 3.0.0
+**Version:** 3.1.0
 
 setlist.app builds worship setlists. An Event holds Songs, and each Song holds Song Details (a name, a colour and a note). You can export a song as a PNG and share a read-only link to an event. A dashboard lists your events.
 
@@ -10,6 +10,7 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 
 - **Testing mode.** Everyone logs in with one shared password to one shared Supabase account. There is no sign-up and no Google sign-in. All testers see and edit the same events. See "Switching to real accounts" to change this.
 - **Database.** `001` and `002` have been run on the project's Supabase database. `003` (team members) must be run before the Team feature can save.
+- **Song library.** Run `004_song_library.sql` before using Upload songs or the Add Song search.
 - **Hosting.** Not deployed to Vercel yet. Run it locally with `npm run dev`.
 - **Branch.** The app is on `main` (merged from `revamp-nextjs` in pull request #1). The old single-file v2.4.0 page is gone from `main`, and since `002` removed its open access policies, it couldn't save anyway.
 
@@ -58,6 +59,8 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 
    - **`003_event_members.sql`** adds the `members` column (a JSON list of `{name, role}`) and recreates `get_shared_event` so share links include the team. If you changed the types in `001`'s `returns table (...)`, make the same change here. Until it runs, saving an event fails with a missing `members` column error.
 
+   - **`004_song_library.sql`** creates the shared `songs` table, a fast search index (`pg_trgm`) and the `search_songs` function. Logged-in users can search and add songs. Editing or deleting library songs is done in the Supabase table editor.
+
    If you are moving from a live v2.x site, read "Switching over from v2.x" before running `002`.
 
 4. Set up the shared tester login (testing mode):
@@ -77,7 +80,10 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 ## Using the app
 
 - **Dashboard:** lists events (name, date, song count), newest first. Each row has **Edit** (or click the title), **Share** (copies the read-only link) and **Delete**. **New event** creates an empty event and opens it.
-- **Editor:** add, reorder and delete songs and song details, cycle colours, export a song as PNG. **Team** (under the event date) opens a pop-up to add, edit and remove team members, each with a free-text name and role. **Save** stores the event. **Share** copies the read-only link. **← Dashboard** goes back. The browser warns before you leave with unsaved changes, including with the Back button.
+- **Editor:** **+ Add Song** opens a search. Type at least 3 letters of the title or any lyric line, then pick a song to import its lyrics, chords and key. **Add blank song** adds an empty one. You can also reorder and delete songs and song details, cycle colours, export a song as PNG. **Team** (under the event date) opens a pop-up to add, edit and remove team members, each with a free-text name and role. **Save** stores the event. **Share** copies the read-only link. **← Dashboard** goes back. The browser warns before you leave with unsaved changes, including with the Back button.
+- **Song tabs:** **Lyrics Only** (large lyrics, no chords), **Lyrics + Chords** (chords above the words, instrumental bars as `| E . . . |`; **Edit** shows the ChordPro text), **Section Notes** (the song details).
+- **Key:** − and + move the song one semitone and rewrite its chords. On a share link they change only your view; **Reset** returns to the event's key.
+- **Upload songs** (dashboard): drop ChordPro (`.cho`, `.chopro`, `.pro`, `.chordpro`) or plain chords-above-lyrics `.txt` files, check the preview, then save. Duplicates (same title and artist) and unreadable files are skipped.
 - **Share link:** `/share/<token>` shows the event read-only to anyone with the link, without logging in, including the team list under **Team**. Old `/?share=<token>` links redirect there.
 
 ## Scripts
@@ -88,7 +94,7 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 | `npm run build` | Builds for production |
 | `npm run start` | Runs the production build |
 | `npm run lint` | Runs ESLint |
-| `npm test` | Runs `lib/event.test.ts` with Node's test runner |
+| `npm test` | Runs `lib/event.test.ts` and `lib/chordpro.test.ts` with Node's test runner |
 
 On a fresh clone, `npx tsc --noEmit` needs `npm run dev`, `npm run build` or `npx next typegen` to have run first. `next-env.d.ts` and `.next/types` are generated and git-ignored.
 
@@ -102,6 +108,7 @@ On a fresh clone, `npx tsc --noEmit` needs `npm run dev`, `npm run build` or `np
 | `/dashboard` | logged in | Your events: new, edit, share, delete, log out |
 | `/events/[id]` | owner | The editor |
 | `/share/[token]` | public | Read-only view of an event |
+| `/library/upload` | logged in | Upload songs to the library |
 
 ## Project layout
 
@@ -118,20 +125,28 @@ app/
   dashboard/DashboardButtons.tsx  New event, Share, Delete, Log out
   events/[id]/page.tsx        server: load row (RLS) -> 404, error page or <EventEditor>
   share/[token]/page.tsx      server: rpc get_shared_event -> 404, error page or <EventEditor readOnly>
+  library/upload/page.tsx       server: auth check -> <UploadSongs>
+  library/upload/UploadSongs.tsx  drop zone, preview, save
 components/
+  AddSongDialog.tsx           Add Song search pop-up (library search, blank song)
   AppShell.tsx                top bar, page frame, footer
   EventEditor.tsx             sidebar + song workspace; edit and read-only modes
   Icon.tsx                    SVG icons
+  KeyControl.tsx              key - / + buttons and Reset
+  SectionNotes.tsx            the song details (Section Notes tab)
+  SongTabs.tsx                Lyrics Only / Lyrics + Chords / Section Notes tabs
   TeamDialog.tsx              Team button + pop-up (edit and read-only)
   ThemeToggle.tsx             light/dark switch
 lib/
+  chordpro.ts                 ChordPro parse, transpose, plain-text conversion, search text
+  chordpro.test.ts            runnable check: node --test
   event.ts                    types (Event, Song, Section, Member), eventFromRow, safeColor, colors, formatEventDate, randomShareToken
   event.test.ts               runnable check: node --test
   exportPng.ts                PNG export
   supabase/client.ts          browser client
   supabase/server.ts          server client (cookies)
 proxy.ts                      session refresh + login redirect
-supabase/migrations/          001_share_function.sql, 002_auth_and_rls.sql, 003_event_members.sql
+supabase/migrations/          001_share_function.sql, 002_auth_and_rls.sql, 003_event_members.sql, 004_song_library.sql
 .env.local.example            NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, SHARED_LOGIN_EMAIL
 ```
 
@@ -149,7 +164,9 @@ supabase/migrations/          001_share_function.sql, 002_auth_and_rls.sql, 003_
 - **"new row violates row-level security policy" when creating an event:** `002_auth_and_rls.sql` hasn't been run. The v2.3.0 policies only allow the `anon` role, and a logged-in user is `authenticated`. Run `002`.
 - **Share links show an error page ("Could not find the function public.get_shared_event"):** the function doesn't exist. Run `003_event_members.sql` (it recreates the function and reloads the API).
 - **Save fails with "Could not find the 'members' column":** `003_event_members.sql` hasn't been run.
-- **"Wrong password." on login:** the password doesn't match the shared account, or `SHARED_LOGIN_EMAIL` doesn't match its email.
+- **Add Song search says "Could not find the function public.search_songs" or Upload fails on a missing `songs` table:** run `004_song_library.sql`.
+- **A plain-text song uploads with chords in the wrong place:** the converter reads a line of only chords as chords for the line below, by column. Use spaces, not a proportional-font layout, or upload ChordPro.
+- **"Wrong password."" on login:** the password doesn't match the shared account, or `SHARED_LOGIN_EMAIL` doesn't match its email.
 - **Dev console: "Encountered a script tag while rendering React component":** harmless. On 404 and error pages, Next re-renders the root layout in the browser during development, and React warns about the theme script, which already ran from the server HTML.
 
 ## Switching to real accounts

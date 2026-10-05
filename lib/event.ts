@@ -1,4 +1,4 @@
-export const APP_VERSION = "3.0.0";
+export const APP_VERSION = "3.1.0";
 
 export const colors = ["#8fc5ff", "#93dfb2", "#ffd37d", "#8edbe8", "#f3a5c6", "#f5c58a", "#c5a5f5", "#b6a9f5", "#9cdda9"];
 
