@@ -212,6 +212,8 @@ export function guessKey(song: ParsedSong): string | null {
 
 const HEADING_RE = /^(intro|verse|pre[- ]?chorus|chorus|bridge|interlude|instrumental|outro|tag|ending|refrain|reff?)(\s*\d+)?(?:\s*\(?(?:x\s*\d+|\d+\s*x)\)?)?[.:]?$/i;
 const KEY_LINE_RE = /^key\s*[:=]\s*([A-G](?:#|b)?m?)\s*$/i;
+const TEMPO_LINE_RE = /^(?:tempo|bpm)\s*[:=]\s*(\d+)\s*(?:bpm)?\s*$/i;
+const TIME_LINE_RE = /^time(?:\s*signature)?\s*[:=]\s*(\d+\s*\/\s*\d+)\s*$/i;
 const MARKER_RE = /^(\|+|\.|-|\/|\(?x\d+\)?)$/i;
 
 function expandTabs(line: string) {
@@ -276,6 +278,23 @@ export function fromChordsAboveLyrics(text: string, fallbackTitle: string, withT
       used.add(i);
     }
   });
+  let tempo = "";
+  let time = "";
+  lines.forEach((l, i) => {
+    if (used.has(i)) return;
+    const t = l.trim();
+    const tm = TEMPO_LINE_RE.exec(t);
+    if (tm && !tempo) {
+      tempo = tm[1];
+      used.add(i);
+      return;
+    }
+    const ts = TIME_LINE_RE.exec(t);
+    if (ts && !time) {
+      time = ts[1].replace(/\s+/g, "");
+      used.add(i);
+    }
+  });
   let title = fallbackTitle;
   const first = lines.findIndex((l, i) => !used.has(i) && l.trim() !== "");
   if (withTitle && first >= 0 && !isChordLine(lines[first]) && headingLabelAt(lines, first) === null) {
@@ -285,6 +304,8 @@ export function fromChordsAboveLyrics(text: string, fallbackTitle: string, withT
   const out: string[] = [];
   if (withTitle && title) out.push(`{title: ${title}}`);
   if (withTitle && key) out.push(`{key: ${key}}`);
+  if (withTitle && time) out.push(`{time: ${time}}`);
+  if (withTitle && tempo) out.push(`{tempo: ${tempo}}`);
   for (let i = 0; i < lines.length; i++) {
     if (used.has(i)) continue;
     const line = lines[i];
@@ -319,4 +340,28 @@ export function convertPastedChords(text: string, withTitle: boolean): string | 
   const lines = text.replace(/\r\n?/g, "\n").split("\n").map(expandTabs);
   if (!lines.some(isChordLine)) return null;
   return fromChordsAboveLyrics(text, "", withTitle);
+}
+
+export const RHYTHM_PRESETS = ["4/4", "3/4", "6/8", "2/4", "12/8"];
+
+export function parseBpm(input: string): number | null {
+  const t = input.trim();
+  if (!/^\d+$/.test(t)) return null;
+  const n = Number(t);
+  return n >= 20 && n <= 300 ? n : null;
+}
+
+// {time: 3/4} → rhythm, {tempo: 72} → bpm (first number, 20–300)
+export function songMeta(text: string): { rhythm: string; bpm: number | null } {
+  let rhythm = "";
+  let bpm: number | null = null;
+  for (const raw of text.replace(/\r\n?/g, "\n").split("\n")) {
+    const d = DIRECTIVE_RE.exec(raw.trim());
+    if (!d) continue;
+    const name = d[1].toLowerCase();
+    const value = (d[2] ?? "").trim();
+    if (name === "time" && !rhythm) rhythm = value.slice(0, 12);
+    if (name === "tempo" && bpm === null) bpm = parseBpm((/\d+/.exec(value) ?? [""])[0]);
+  }
+  return { rhythm, bpm };
 }

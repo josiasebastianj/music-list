@@ -7,13 +7,15 @@ import { uid, type Song } from "@/lib/event";
 import { sectionNotesFrom } from "@/lib/songContent";
 import { createClient } from "@/lib/supabase/client";
 
-type Result = { id: string; title: string; artist: string | null; song_key: string; content: string };
+type Result = { id: string; title: string; artist: string | null; song_key: string; rhythm?: string | null; bpm?: number | null; content: string };
 
 function songFromLibrary(r: Result): Song {
   return {
     id: uid("song"),
     title: r.title,
     baseKey: r.song_key,
+    rhythm: r.rhythm ?? "",
+    bpm: r.bpm ?? null,
     content: r.content,
     librarySongId: r.id,
     sections: sectionNotesFrom(r.content),
@@ -115,7 +117,7 @@ export default function AddSongDialog({ onAdd }: { onAdd: (song: Song) => void }
           {searching && results && results.length === 0 && !error && !loading && <p className="share-dialog-copy">No songs found.</p>}
           <div className="share-dialog-actions">
             <a className="btn" href="/library/upload">Upload songs</a>
-            <button className="btn" type="button" onClick={() => pick({ id: uid("song"), title: "", baseKey: "", content: "", sections: [] })}>
+            <button className="btn" type="button" onClick={() => pick({ id: uid("song"), title: "", baseKey: "", rhythm: "", bpm: null, content: "", sections: [] })}>
               Add blank song
             </button>
             <button className="btn" type="button" onClick={close}>Cancel</button>

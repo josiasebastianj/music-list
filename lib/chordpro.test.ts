@@ -4,6 +4,7 @@ import {
   convertPastedChords,
   fromChordsAboveLyrics,
   guessKey,
+  parseBpm,
   isChord,
   isChordProText,
   keyStep,
@@ -12,6 +13,7 @@ import {
   parseChordPro,
   searchText,
   sectionLabels,
+  songMeta,
   transpose,
 } from "./chordpro.ts";
 
@@ -235,4 +237,24 @@ test("convertPastedChords leaves ChordPro and plain lyrics alone", () => {
 
 test("fromChordsAboveLyrics writes no title directive without a title", () => {
   assert.equal(fromChordsAboveLyrics("E       B\nYou are here", ""), "[E]You are [B]here");
+});
+
+test("parseBpm accepts whole numbers from 20 to 300", () => {
+  assert.equal(parseBpm("72"), 72);
+  assert.equal(parseBpm(" 20 "), 20);
+  assert.equal(parseBpm("300"), 300);
+  for (const bad of ["19", "301", "72.5", "fast", "", "-80"]) assert.equal(parseBpm(bad), null, bad);
+});
+
+test("songMeta reads {time} and {tempo}", () => {
+  assert.deepEqual(songMeta("{title: X}\n{time: 3/4}\n{tempo: 72 bpm}\n[G]Hi"), { rhythm: "3/4", bpm: 72 });
+  assert.deepEqual(songMeta("{tempo: 400}"), { rhythm: "", bpm: null });
+  assert.deepEqual(songMeta("{tempo: slow}"), { rhythm: "", bpm: null });
+  assert.deepEqual(songMeta("[G]No meta"), { rhythm: "", bpm: null });
+});
+
+test("fromChordsAboveLyrics turns Tempo/BPM/Time lines into directives", () => {
+  assert.equal(fromChordsAboveLyrics("Song\nKey: G\nTempo: 72\nTime: 3 / 4\nG\nHello", "f"), "{title: Song}\n{key: G}\n{time: 3/4}\n{tempo: 72}\n[G]Hello");
+  assert.equal(fromChordsAboveLyrics("Song\nBPM = 120\nG\nHello", "f"), "{title: Song}\n{tempo: 120}\n[G]Hello");
+  assert.deepEqual(songMeta(fromChordsAboveLyrics("Song\nTempo: 72\nTime: 6/8\nG\nHi", "f")), { rhythm: "6/8", bpm: 72 });
 });

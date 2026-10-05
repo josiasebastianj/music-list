@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { colors, eventFromRow, randomShareToken, safeColor } from "./event.ts";
+import { colors, eventFromRow, migrationHint, randomShareToken, safeColor } from "./event.ts";
 
 test("eventFromRow turns a malformed row into a valid event", () => {
   const event = eventFromRow({
@@ -32,6 +32,7 @@ test("eventFromRow handles missing or non-array data", () => {
   assert.deepEqual(eventFromRow({ event_name: "Sunday", event_date: "2026-10-04", data: null }), {
     eventName: "Sunday",
     eventDate: "2026-10-04",
+    owner: "",
     songs: [],
     members: [],
   });
@@ -54,7 +55,7 @@ test("eventFromRow reads team members and cleans bad entries", () => {
 });
 
 test("eventFromRow keeps valid data unchanged", () => {
-  const songs = [{ id: "song-1", title: "Way Maker", baseKey: "E", content: "[E]Way maker", librarySongId: "lib-1", sections: [{ id: "section-1", name: "Intro", color: "#93dfb2", note: "Soft\nkeys" }] }];
+  const songs = [{ id: "song-1", title: "Way Maker", baseKey: "E", rhythm: "3/4", bpm: 72, content: "[E]Way maker", librarySongId: "lib-1", sections: [{ id: "section-1", name: "Intro", color: "#93dfb2", note: "Soft\nkeys" }] }];
   assert.deepEqual(eventFromRow({ event_name: "A", event_date: "2026-10-04", data: { songs } }).songs, songs);
 });
 
@@ -76,4 +77,17 @@ test("eventFromRow gives old songs empty content and no library id", () => {
   assert.ok(!("librarySongId" in event.songs[0]));
   assert.equal(event.songs[1].content, "");
   assert.ok(!("librarySongId" in event.songs[1]));
+});
+
+test("eventFromRow reads owner and cleans rhythm and bpm", () => {
+  const event = eventFromRow({ event_name: null, event_date: null, owner: "Team A", data: { songs: [{ rhythm: "6/8", bpm: 120 }, { rhythm: 5, bpm: 72.5 }, { bpm: 900 }, {}] } });
+  assert.equal(event.owner, "Team A");
+  assert.deepEqual(event.songs.map((s) => [s.rhythm, s.bpm]), [["6/8", 120], ["", null], ["", null], ["", null]]);
+  assert.equal(eventFromRow({ event_name: null, event_date: null, data: null }).owner, "");
+});
+
+test("migrationHint points at migration 005 only for its missing columns", () => {
+  assert.match(migrationHint("column events.owner does not exist"), /005_library_details\.sql/);
+  assert.match(migrationHint("Could not find the table 'public.themes' in the schema cache"), /005_library_details\.sql/);
+  assert.equal(migrationHint("JWT expired"), "JWT expired");
 });
