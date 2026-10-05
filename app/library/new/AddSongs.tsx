@@ -18,11 +18,13 @@ export default function AddSongs({ themes }: { themes: Theme[] }) {
   const [pasted, setPasted] = useState("");
   const [busy, setBusy] = useState(false);
   const [over, setOver] = useState(false);
+  const [checking, setChecking] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   async function addDrafts(read: Draft[]) {
     if (!read.length) return;
     setMessage(null);
+    setChecking(true);
     const titles = [...new Set(read.map((d) => d.fields.title.trim()).filter(Boolean))];
     let existing: { title: string; artist: string | null }[] = [];
     if (titles.length) {
@@ -31,15 +33,17 @@ export default function AddSongs({ themes }: { themes: Theme[] }) {
       else existing = data ?? [];
     }
     setDrafts((current) => {
-      const seen = new Set([...existing.map((s) => identity(s.title, s.artist ?? "")), ...current.map((d) => identity(d.fields.title, d.fields.artist))]);
+      const counts = (d: Draft) => !d.unreadable && !!d.fields.title.trim();
+      const seen = new Set([...existing.map((s) => identity(s.title, s.artist ?? "")), ...current.filter(counts).map((d) => identity(d.fields.title, d.fields.artist))]);
       const marked = read.map((d) => {
         const id = identity(d.fields.title, d.fields.artist);
-        const duplicate = !d.unreadable && seen.has(id);
-        if (!d.unreadable) seen.add(id);
+        const duplicate = counts(d) && seen.has(id);
+        if (counts(d)) seen.add(id);
         return { ...d, duplicate };
       });
       return [...current, ...marked];
     });
+    setChecking(false);
   }
 
   async function onFiles(files: File[]) {
@@ -60,8 +64,9 @@ export default function AddSongs({ themes }: { themes: Theme[] }) {
 
   async function onPreview() {
     if (!pasted.trim()) return;
-    await addDrafts([draftFrom("Pasted text", pasted, "")]);
-    setPasted("");
+    const text = pasted;
+    await addDrafts([draftFrom("Pasted text", text, "")]);
+    setPasted((cur) => (cur === text ? "" : cur));
   }
 
   const edit = (i: number, patch: Partial<Draft>) => setDrafts((current) => current.map((d, j) => (j === i ? { ...d, ...patch } : d)));
@@ -74,6 +79,7 @@ export default function AddSongs({ themes }: { themes: Theme[] }) {
               ...d,
               fields: { ...d.fields, ...patch },
               ...("title" in patch || "artist" in patch ? { duplicate: false } : {}),
+              ...(d.result?.startsWith(SAVED) ? {} : { result: undefined }),
               ...("key" in patch ? { keyConfirmed: true } : {}),
             }
           : d,
@@ -86,11 +92,15 @@ export default function AddSongs({ themes }: { themes: Theme[] }) {
     setBusy(true);
     setMessage(null);
     const supabase = createClient();
-    const next = [...drafts];
+    const snapshot = drafts;
     let added = 0;
-    for (let i = 0; i < next.length; i++) {
-      const d = next[i];
-      if (!isReady(d)) continue;
+    let skipped = 0;
+    for (let i = 0; i < snapshot.length; i++) {
+      const d = snapshot[i];
+      if (!isReady(d)) {
+        if (!d.result) skipped++;
+        continue;
+      }
       const { data, error } = await supabase.from("songs").insert(toSongRow(d.fields, d.content)).select("id").single();
       let result = SAVED;
       if (error) {
@@ -102,10 +112,10 @@ export default function AddSongs({ themes }: { themes: Theme[] }) {
           if (themeError) result = `Saved, but themes failed: ${migrationHint(themeError.message)}`;
         }
       }
-      next[i] = { ...d, result };
-      setDrafts([...next]);
+      if (result !== SAVED && !result.startsWith("Saved")) skipped++;
+      setDrafts((cur) => cur.map((x, j) => (j === i ? { ...x, result } : x)));
     }
-    setMessage(`Added ${added}, skipped ${next.length - added}.`);
+    setMessage(`Added ${added}, skipped ${skipped}.`);
     setBusy(false);
   }
 
@@ -127,9 +137,9 @@ export default function AddSongs({ themes }: { themes: Theme[] }) {
             placeholder="Paste a chord sheet from the web (chords above the lyrics) or ChordPro text. The first line is used as the title."
             aria-label="Song text"
             spellCheck={false}
-            disabled={busy}
+            disabled={busy || checking}
           />
-          <button className="btn primary" type="button" onClick={onPreview} disabled={busy || !pasted.trim()}>Preview</button>
+          <button className="btn primary" type="button" onClick={onPreview} disabled={busy || checking || !pasted.trim()}>Preview</button>
         </div>
       ) : (
         <label
@@ -152,13 +162,14 @@ export default function AddSongs({ themes }: { themes: Theme[] }) {
         <div className="draft-list">
           {drafts.map((d, i) => {
             const s = draftStatus(d);
-            const locked = !!d.result || d.unreadable;
+            const saved = !!d.result?.startsWith(SAVED);
+            const locked = saved || d.unreadable;
             return (
               <article key={i} className="draft-card">
                 <header className="draft-head">
                   <strong className="draft-label">{d.label}</strong>
                   <span className={`upload-status ${s.ok ? "ok" : "bad"}`}>{s.text}</span>
-                  {!d.result && (
+                  {!saved && (
                     <button className="icon-btn danger" type="button" title="Remove from this batch" aria-label={`Remove ${d.label}`} onClick={() => remove(i)} disabled={busy}>
                       <Icon name="trash" />
                     </button>

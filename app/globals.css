@@ -336,3 +336,6 @@ a.btn{text-decoration:none}
 .draft-label{flex:1;min-width:0;overflow-wrap:anywhere}
 .draft-preview{margin-top:8px}
 .draft-preview summary{margin-bottom:8px;color:var(--accent);font-weight:700;cursor:pointer}
+
+.draft-head{flex-wrap:wrap}
+.draft-head .upload-status{white-space:normal;overflow-wrap:anywhere;min-width:0}
