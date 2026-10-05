@@ -1,4 +1,4 @@
-import { keyStep, parseBpm, searchText } from "./chordpro.ts";
+import { fromChordsAboveLyrics, guessKey, isChordProText, keyStep, parseBpm, parseChordPro, searchText, songMeta } from "./chordpro.ts";
 
 export type Theme = { id: string; name: string };
 
@@ -55,3 +55,56 @@ export function toSongRow(f: Fields, content: string) {
     search_text: searchText(title, content),
   };
 }
+
+export type Draft = {
+  label: string;
+  fields: Fields;
+  keyConfirmed: boolean;
+  content: string;
+  sections: string[];
+  unreadable: boolean;
+  duplicate: boolean;
+  result?: string;
+};
+
+export const SAVED = "Saved";
+
+export const identity = (title: string, artist: string) => `${title.trim().toLowerCase()}\u0000${artist.trim().toLowerCase()}`;
+
+// A pasted chord sheet or an uploaded file → a preview card. fallbackTitle: the file name ("" for pasted text).
+export function draftFrom(label: string, raw: string, fallbackTitle: string): Draft {
+  const text = raw.replace(/\r\n?/g, "\n");
+  let content = isChordProText(text) ? text : fromChordsAboveLyrics(text, fallbackTitle);
+  if (!parseChordPro(content).title.trim() && fallbackTitle) content = `{title: ${fallbackTitle}}\n${content}`;
+  const parsed = parseChordPro(content);
+  const meta = songMeta(content);
+  return {
+    label,
+    fields: {
+      title: parsed.title,
+      artist: parsed.artist,
+      key: parsed.key || guessKey(parsed) || "",
+      rhythm: meta.rhythm,
+      bpm: meta.bpm === null ? "" : String(meta.bpm),
+      themeIds: [],
+    },
+    keyConfirmed: parsed.key !== "",
+    content,
+    sections: parsed.sections.map((s) => s.label).filter(Boolean),
+    unreadable: !parsed.sections.some((s) => s.lines.length > 0),
+    duplicate: false,
+  };
+}
+
+export function draftStatus(d: Draft): { text: string; ok: boolean } {
+  if (d.result) return { text: d.result, ok: d.result === SAVED };
+  if (d.unreadable) return { text: "Couldn't read it", ok: false };
+  if (d.duplicate) return { text: "Already in library", ok: false };
+  if (!d.fields.title.trim()) return { text: "Needs a title", ok: false };
+  if (!keyStep(d.fields.key, 0) || !d.keyConfirmed) return { text: "Needs a key", ok: false };
+  const problem = validateFields(d.fields);
+  if (problem) return { text: problem, ok: false };
+  return { text: "Ready", ok: true };
+}
+
+export const isReady = (d: Draft) => draftStatus(d).text === "Ready";

@@ -326,3 +326,13 @@ a.btn{text-decoration:none}
 .lib-preview{margin-top:16px;padding:16px;border:1px dashed var(--line-strong);border-radius:var(--r-sm)}
 @media(max-width:680px){.field-title{grid-column:1/-1}}
 .theme-picker{flex-direction:row;align-items:center}
+
+.paste-box{display:flex;flex-direction:column;gap:10px;margin:16px 0}
+.paste-box .chord-editor{min-height:220px}
+.paste-box .btn{align-self:flex-start}
+.draft-list{display:flex;flex-direction:column;gap:14px;margin-top:16px}
+.draft-card{padding:14px 16px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface)}
+.draft-head{display:flex;align-items:center;gap:10px}
+.draft-label{flex:1;min-width:0;overflow-wrap:anywhere}
+.draft-preview{margin-top:8px}
+.draft-preview summary{margin-bottom:8px;color:var(--accent);font-weight:700;cursor:pointer}
