@@ -254,3 +254,22 @@ a.btn{text-decoration:none}
 .song-result-meta{color:var(--muted);font-size:13px}
 .song-result-snippet{color:var(--muted);font-size:13px;overflow-wrap:anywhere}
 .song-result mark{background:var(--accent-soft);color:var(--text);border-radius:3px}
+
+.key-control{display:inline-flex;align-items:center;gap:4px;margin-right:6px}
+.key-control .key-field,.key-control .key-badge{margin-right:0}
+.song-tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--line);overflow-x:auto}
+.song-tab{padding:10px 14px;border:0;border-bottom:2px solid transparent;background:none;color:var(--muted);font-size:14px;font-weight:700;white-space:nowrap}
+.song-tab.active{color:var(--text);border-bottom-color:var(--accent)}
+.lyrics-toolbar{display:flex;justify-content:flex-end;margin-bottom:8px}
+.lyrics-section{margin:0 0 22px}
+.lyrics-label{margin:0 0 6px;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.lyrics-line{margin:0 0 4px;font-size:20px;line-height:1.5;overflow-wrap:anywhere}
+.lyrics-line.chord-plain{font-size:18px;line-height:1.4}
+.lyrics-empty{color:var(--muted)}
+.chord-line{display:flex;flex-wrap:wrap;align-items:flex-end;margin:0 0 6px}
+.chord-seg{display:inline-flex;flex-direction:column;min-width:0}
+.chord{min-height:1.3em;font-size:15px;font-weight:800;color:var(--accent);white-space:pre}
+.chord-text{font-size:18px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere}
+.chord-grid{margin:0 0 6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:16px;font-weight:700;color:var(--accent);white-space:pre-wrap;overflow-wrap:anywhere}
+.chord-editor{width:100%;min-height:360px;padding:12px;border:1px solid var(--line-strong);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px;line-height:1.5;outline:none}
+.chord-editor:focus{border-color:var(--accent)}
