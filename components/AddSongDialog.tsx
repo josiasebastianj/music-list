@@ -45,7 +45,7 @@ export default function AddSongDialog({ onAdd }: { onAdd: (song: Song) => void }
     let cancelled = false;
     const timer = setTimeout(async () => {
       setLoading(true);
-      const { data, error } = await createClient().rpc("search_songs", { q: query });
+      const { data, error } = await createClient().rpc("search_songs", { q: normalizeSearch(query) });
       if (cancelled) return;
       setLoading(false);
       setError(error ? `Search failed: ${error.message}` : null);

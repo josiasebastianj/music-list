@@ -23,8 +23,10 @@ const ACCEPT = ".cho,.chopro,.pro,.chordpro,.txt";
 const identity = (title: string, artist: string) => `${title.trim().toLowerCase()}\u0000${artist.trim().toLowerCase()}`;
 
 async function readSong(file: File): Promise<Row> {
-  const text = await file.text();
-  const content = isChordProText(text) ? text : fromChordsAboveLyrics(text, file.name.replace(/\.[^.]+$/, ""));
+  const text = (await file.text()).replace(/\r\n?/g, "\n");
+  const base = file.name.replace(/\.[^.]+$/, "");
+  let content = isChordProText(text) ? text : fromChordsAboveLyrics(text, base);
+  if (!parseChordPro(content).title.trim()) content = `{title: ${base}}\n${content}`;
   const parsed = parseChordPro(content);
   return {
     file: file.name,
@@ -34,7 +36,7 @@ async function readSong(file: File): Promise<Row> {
     keyConfirmed: parsed.key !== "",
     content,
     sections: parsed.sections.map((s) => s.label).filter(Boolean),
-    unreadable: !parsed.title.trim() || !parsed.sections.some((s) => s.lines.length > 0),
+    unreadable: !parsed.sections.some((s) => s.lines.length > 0),
     duplicate: false,
   };
 }
@@ -154,15 +156,15 @@ export default function UploadSongs() {
                   <tr key={i}>
                     <td>{r.file}</td>
                     <td>
-                      <input value={r.title} disabled={locked} onChange={(e) => edit(i, { title: e.target.value, duplicate: false })} aria-label={`Title for ${r.file}`} />
+                      <input value={r.title} disabled={locked || busy} onChange={(e) => edit(i, { title: e.target.value, duplicate: false })} aria-label={`Title for ${r.file}`} />
                     </td>
                     <td>
-                      <input value={r.artist} disabled={locked} onChange={(e) => edit(i, { artist: e.target.value, duplicate: false })} aria-label={`Artist for ${r.file}`} />
+                      <input value={r.artist} disabled={locked || busy} onChange={(e) => edit(i, { artist: e.target.value, duplicate: false })} aria-label={`Artist for ${r.file}`} />
                     </td>
                     <td>
-                      <input value={r.key} disabled={locked} onChange={(e) => edit(i, { key: e.target.value, keyConfirmed: true })} aria-label={`Key for ${r.file}`} />
+                      <input value={r.key} disabled={locked || busy} onChange={(e) => edit(i, { key: e.target.value, keyConfirmed: true })} aria-label={`Key for ${r.file}`} />
                       {!locked && !r.keyConfirmed && keyStep(r.key, 0) && (
-                        <button className="btn compact" type="button" onClick={() => edit(i, { keyConfirmed: true })}>
+                        <button className="btn compact" type="button" disabled={busy} onClick={() => edit(i, { keyConfirmed: true })}>
                           Use {r.key}
                         </button>
                       )}

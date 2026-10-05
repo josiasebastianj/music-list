@@ -40,12 +40,26 @@ export function keyStep(key: string, steps: number): string | null {
   return (usesFlats(root, k.minor) ? FLATS : SHARPS)[root] + (k.minor ? "m" : "");
 }
 
-function transposeChord(token: string, steps: number, flats: boolean) {
+type Spell = (pc: number, bass: boolean) => string;
+
+function spellerFor(to: string, root: number, minor: boolean): Spell {
+  const R = minor ? (root + 3) % 12 : root;
+  const t = to.trim();
+  const flats = t.includes("#") ? false : t.includes("b") ? true : usesFlats(root, minor);
+  const key = (pc: number) => (flats ? FLATS : SHARPS)[pc];
+  return (pc, bass) => {
+    const d = mod12(pc - R);
+    if (d === 6) return key(pc);
+    if (d === 3 || d === 10 || (!bass && (d === 1 || d === 8))) return FLATS[pc];
+    if (bass && (d === 1 || d === 8)) return SHARPS[pc];
+    return key(pc);
+  };
+}
+
+function transposeChord(token: string, steps: number, spell: Spell) {
   const m = CHORD_RE.exec(token);
   if (!m) return token;
-  const names = flats ? FLATS : SHARPS;
-  const shift = (note: string) => names[mod12(NOTE_INDEX[note] + steps)];
-  return shift(m[1]) + m[2] + (m[3] ? "/" + shift(m[3]) : "");
+  return spell(mod12(NOTE_INDEX[m[1]] + steps), false) + m[2] + (m[3] ? "/" + spell(mod12(NOTE_INDEX[m[3]] + steps), true) : "");
 }
 
 export function transpose(text: string, from: string, to: string): string {
@@ -53,7 +67,7 @@ export function transpose(text: string, from: string, to: string): string {
   const t = parseKey(to);
   if (!f || !t || from.trim() === to.trim()) return text;
   const steps = t.root - f.root;
-  const flats = usesFlats(t.root, t.minor);
+  const spell = spellerFor(to, t.root, t.minor);
   let inGrid = false;
   return text
     .split("\n")
@@ -67,8 +81,8 @@ export function transpose(text: string, from: string, to: string): string {
         if (name === "end_of_grid" || name === "eog") inGrid = false;
         return line;
       }
-      if (inGrid || trimmed.startsWith("|")) return line.replace(/\S+/g, (tok) => transposeChord(tok, steps, flats));
-      return line.replace(/\[([^\]]+)\]/g, (whole, chord: string) => (isChord(chord) ? `[${transposeChord(chord, steps, flats)}]` : whole));
+      if (inGrid || trimmed.startsWith("|")) return line.replace(/\S+/g, (tok) => transposeChord(tok, steps, spell));
+      return line.replace(/\[([^\]]+)\]/g, (whole, chord: string) => (isChord(chord) ? `[${transposeChord(chord, steps, spell)}]` : whole));
     })
     .join("\n");
 }
@@ -122,11 +136,12 @@ export function parseChordPro(text: string): ParsedSong {
       const name = d[1].toLowerCase();
       const value = (d[2] ?? "").trim();
       if (name === "title" || name === "t") song.title = value;
-      else if (name === "artist") song.artist = value;
+      else if (name === "artist" || ((name === "subtitle" || name === "st") && !song.artist)) song.artist = value;
       else if (name === "key") song.key = value;
       else if (name === "start_of_tab" || name === "sot") inTab = true;
       else if (name === "end_of_tab" || name === "eot") inTab = false;
       else if (SECTION_STARTS[name]) {
+        inTab = false;
         current = open(value || SECTION_STARTS[name].label, SECTION_STARTS[name].kind);
         explicit = true;
       } else if (SECTION_ENDS.has(name)) {
@@ -138,7 +153,7 @@ export function parseChordPro(text: string): ParsedSong {
       }
       continue;
     }
-    if (inTab) continue;
+    if (inTab || trimmed.startsWith("#")) continue;
     if (!trimmed) {
       if (current && !explicit && !current.label && current.lines.length) current = null;
       continue;
@@ -169,7 +184,7 @@ export function sectionLabels(text: string): string[] {
 }
 
 export function normalizeSearch(s: string) {
-  return s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  return s.normalize("NFD").replace(/\p{M}/gu, "").normalize("NFC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 }
 
 export function searchText(title: string, text: string) {
@@ -195,7 +210,7 @@ export function guessKey(song: ParsedSong): string | null {
   return null;
 }
 
-const HEADING_RE = /^(intro|verse|pre-?chorus|chorus|bridge|interlude|instrumental|outro|tag|ending|refrain|reff?)(\s*\d+)?[.:]?$/i;
+const HEADING_RE = /^(intro|verse|pre[- ]?chorus|chorus|bridge|interlude|instrumental|outro|tag|ending|refrain|reff?)(\s*\d+)?(?:\s*\(?(?:x\s*\d+|\d+\s*x)\)?)?[.:]?$/i;
 const KEY_LINE_RE = /^key\s*[:=]\s*([A-G](?:#|b)?m?)\s*$/i;
 const MARKER_RE = /^(\|+|\.|-|\/|\(?x\d+\)?)$/i;
 

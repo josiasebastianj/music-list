@@ -117,7 +117,7 @@ test("sectionLabels lists labelled sections in order", () => {
 
 test("searchText and normalizeSearch agree on punctuation, case and accents", () => {
   assert.equal(searchText("Way Maker", WAY_MAKER), "way maker you are here moving in our midst way maker x2");
-  assert.equal(searchText("Hosana", "[D]Ho-sa-na, Kau Raja-ku\n[G]Tuhan yang [A]mulia é"), "hosana ho sa na kau raja ku tuhan yang mulia é");
+  assert.equal(searchText("Hosana", "[D]Ho-sa-na, Kau Raja-ku\n[G]Tuhan yang [A]mulia é"), "hosana ho sa na kau raja ku tuhan yang mulia e");
   assert.equal(normalizeSearch("  Moving, in OUR... midst! "), "moving in our midst");
   assert.ok(searchText("Way Maker", WAY_MAKER).includes(normalizeSearch("HERE, moving")));
 });
@@ -172,4 +172,47 @@ test("fromChordsAboveLyrics keeps lyric lines ending in a colon", () => {
 test("parseChordPro skips tab blocks", () => {
   const song = parseChordPro("{sov: Verse}\nHello [E]world\n{sot}\ne|--0--|\nB|--1--|\n{eot}\nAgain");
   assert.deepEqual(lyricLines(song), [{ label: "Verse", lines: ["Hello world", "Again"] }]);
+});
+
+test("borrowed chords keep their spelling through twelve steps", () => {
+  const original = "{key: C}\n[C]Lord [Bb]I [Ab]lift [F/A]Your [G7]name";
+  let text = original;
+  let key = "C";
+  for (let i = 0; i < 12; i++) {
+    const next = keyStep(key, 1)!;
+    text = transpose(text, key, next);
+    key = next;
+  }
+  assert.equal(text, original);
+});
+
+test("a flat-six chord survives up and down", () => {
+  const up = transpose("[G]Come [Eb]now [F]is the [C]time", "G", "Ab");
+  assert.equal(up, "[Ab]Come [E]now [Gb]is the [Db]time");
+  assert.equal(transpose(up, "Ab", "G"), "[G]Come [Eb]now [F]is the [C]time");
+});
+
+test("borrowed chords in sharp keys use flats", () => {
+  assert.equal(transpose("[C]a [Ab]b [Bb]c", "C", "D"), "[D]a [Bb]b [C]c");
+  assert.equal(transpose("[C]a [D/F#]b", "Bb", "C"), "[D]a [E/G#]b");
+});
+
+test("typed sharp keys spell with sharps", () => {
+  assert.equal(transpose("[C]a [G]b", "C", "F#"), "[F#]a [C#]b");
+});
+
+test("search ignores accents in the song text and in the query", () => {
+  assert.ok(searchText("Crème", "[C]Crème brûlée").includes(normalizeSearch("creme BRULEE")));
+});
+
+test("pre chorus with a space and repeat suffixes are headings", () => {
+  assert.equal(fromChordsAboveLyrics("Song\nPre Chorus\nD\nSing", "f"), "{title: Song}\n{comment: Pre Chorus}\n[D]Sing");
+  assert.equal(fromChordsAboveLyrics("Song\nChorus (x2)\nD\nSing", "f"), "{title: Song}\n{comment: Chorus (x2)}\n[D]Sing");
+});
+
+test("subtitle fills the artist, # lines are comments, a new section ends a tab", () => {
+  const song = parseChordPro("{t: A}\n{st: Sinach}\n# note\n{sot}\ne|--0--|\n{soc}\n[C]Sing");
+  assert.equal(song.artist, "Sinach");
+  assert.deepEqual(lyricLines(song), [{ label: "Chorus", lines: ["Sing"] }]);
+  assert.equal(parseChordPro("{artist: X}\n{st: Y}").artist, "X");
 });

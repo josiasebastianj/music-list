@@ -42,7 +42,7 @@ export default function SongTabs({ song, content, readOnly, onContentChange, onS
   const [editing, setEditing] = useState(false);
   const parsed = useMemo(() => parseChordPro(content), [content]);
   const hasLyrics = content.trim() !== "";
-  const tab: Tab = picked ?? stored ?? (hasLyrics ? "chords" : "notes");
+  const tab: Tab = picked ?? (hasLyrics ? (stored ?? "chords") : "notes");
 
   function choose(t: Tab) {
     setPicked(t);
