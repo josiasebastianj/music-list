@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LogoutButton } from "@/app/dashboard/DashboardButtons";
 import Icon from "@/components/Icon";
@@ -32,10 +33,10 @@ export default async function LibraryPage() {
             <h1 className="dash-title">Songs</h1>
             <div className="dash-sub">{songs.length} {songs.length === 1 ? "song" : "songs"}, A–Z. Add a song once and use it in every event.</div>
           </div>
-          <a className="btn primary" href="/library/new">
+          <Link className="btn primary" href="/library/new">
             <Icon name="plus" />
             Add songs
-          </a>
+          </Link>
         </div>
         {error ? (
           <div className="share-banner error" role="alert">Could not load the library: {migrationHint(error.message)}</div>

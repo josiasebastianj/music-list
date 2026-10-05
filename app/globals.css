@@ -325,3 +325,4 @@ a.btn{text-decoration:none}
 .lib-editor .chord-editor{min-height:280px}
 .lib-preview{margin-top:16px;padding:16px;border:1px dashed var(--line-strong);border-radius:var(--r-sm)}
 @media(max-width:680px){.field-title{grid-column:1/-1}}
+.theme-picker{flex-direction:row;align-items:center}

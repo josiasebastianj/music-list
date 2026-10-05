@@ -116,6 +116,7 @@ export default function AddSongDialog({ onAdd }: { onAdd: (song: Song) => void }
           )}
           {searching && results && results.length === 0 && !error && !loading && <p className="share-dialog-copy">No songs found.</p>}
           <div className="share-dialog-actions">
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- full page load so the editor's beforeunload guard protects unsaved edits */}
             <a className="btn" href="/library/upload">Upload songs</a>
             <button className="btn" type="button" onClick={() => pick({ id: uid("song"), title: "", baseKey: "", rhythm: "", bpm: null, content: "", sections: [] })}>
               Add blank song

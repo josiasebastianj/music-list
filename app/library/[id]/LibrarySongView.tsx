@@ -67,20 +67,25 @@ export default function LibrarySongView({ initial, themes }: { initial: LibraryS
     const before = song.themes.map((t) => t.id);
     const removed = before.filter((id) => !fields.themeIds.includes(id));
     const added = fields.themeIds.filter((id) => !before.includes(id));
-    let themeError: string | null = null;
+    const errors: string[] = [];
     if (removed.length) {
       const { error } = await supabase.from("song_themes").delete().eq("song_id", song.id).in("theme_id", removed);
-      if (error) themeError = error.message;
+      if (error) errors.push(error.message);
     }
     if (added.length) {
-      const { error } = await supabase.from("song_themes").insert(added.map((theme_id) => ({ song_id: song.id, theme_id })));
-      if (error) themeError = error.message;
+      const { error } = await supabase.from("song_themes").upsert(added.map((theme_id) => ({ song_id: song.id, theme_id })), { onConflict: "song_id,theme_id", ignoreDuplicates: true });
+      if (error) errors.push(error.message);
     }
+    const { data: links } = await supabase.from("song_themes").select("theme_id").eq("song_id", song.id);
+    const savedIds = links ? links.map((l) => l.theme_id) : before;
     setBusy(false);
-    setSong({ ...song, ...row, themes: themes.filter((t) => fields.themeIds.includes(t.id)).sort(byName) });
+    setSong({ ...song, ...row, themes: themes.filter((t) => savedIds.includes(t.id)).sort(byName) });
+    if (errors.length) {
+      setError(`The song was saved, but its themes weren't fully updated: ${migrationHint(errors.join("; "))}. Press Save to try again.`);
+      return;
+    }
     setDirty(false);
     setEditing(false);
-    if (themeError) setError(`The song was saved, but its themes weren't updated: ${migrationHint(themeError)}`);
   }
 
   async function remove() {
