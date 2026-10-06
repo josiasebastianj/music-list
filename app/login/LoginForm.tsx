@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useActionState } from "react";
 import AppShell from "@/components/AppShell";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -11,6 +12,7 @@ export default function LoginForm({ initialError }: { initialError: string | nul
   return (
     <AppShell actions={<ThemeToggle />}>
       <main className="auth-card">
+        <Image className="brand-hero" src="/brand/mdchord-logo.png" alt="MDCHORD" width={280} height={195} priority />
         <h1 className="auth-title">Log in</h1>
         {error && <p className="auth-message error" role="alert">{error}</p>}
         <form className="auth-form" action={formAction}>

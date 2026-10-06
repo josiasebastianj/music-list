@@ -232,3 +232,123 @@ a.btn{text-decoration:none}
 .team-role{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
 .team-name{font-size:16px;font-weight:600;overflow-wrap:anywhere}
 @media(max-width:680px){.team-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"name tools" "role tools"}.team-row .team-input:first-child{grid-area:name}.team-row .team-input:nth-child(2){grid-area:role}.team-row .icon-btn{grid-area:tools}}
+.dash-head-actions{display:flex;gap:8px;flex-wrap:wrap}
+.upload-drop{display:flex;flex-direction:column;align-items:center;gap:6px;margin:20px 0;padding:28px 16px;border:2px dashed var(--line-strong);border-radius:var(--r-sm);color:var(--muted);text-align:center;cursor:pointer}
+.upload-drop.over,.upload-drop:hover{border-color:var(--accent);color:var(--text)}
+.upload-table-wrap{overflow-x:auto}
+.upload-table{width:100%;border-collapse:collapse;font-size:14px}
+.upload-table th,.upload-table td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.upload-table input{width:100%;min-width:90px;padding:6px 8px;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--text)}
+.upload-table .btn{margin-top:6px}
+.upload-status{font-weight:700;white-space:nowrap}
+.upload-status.ok{color:var(--accent)}
+.upload-status.bad{color:var(--danger)}
+.upload-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.upload-drop:focus-within{border-color:var(--accent);color:var(--text);outline:2px solid var(--accent);outline-offset:2px}
+
+.song-results{list-style:none;margin:0;padding:0;max-height:50vh;overflow-y:auto}
+.song-result{display:flex;flex-direction:column;gap:2px;width:100%;padding:10px 8px;border:0;border-bottom:1px solid var(--line);background:none;color:var(--text);text-align:left}
+.song-result:hover{background:var(--surface-2)}
+.song-result-title{font-weight:700;overflow-wrap:anywhere}
+.song-result-meta{color:var(--muted);font-size:13px}
+.song-result-snippet{color:var(--muted);font-size:13px;overflow-wrap:anywhere}
+.song-result mark{background:var(--accent-soft);color:var(--text);border-radius:3px}
+
+.key-control{display:inline-flex;align-items:center;gap:4px;margin-right:6px}
+.key-control .key-field,.key-control .key-badge{margin-right:0}
+.song-tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--line);overflow-x:auto}
+.song-tab{padding:10px 14px;border:0;border-bottom:2px solid transparent;background:none;color:var(--muted);font-size:14px;font-weight:700;white-space:nowrap}
+.song-tab.active{color:var(--text);border-bottom-color:var(--accent)}
+.lyrics-toolbar{display:flex;justify-content:flex-end;margin-bottom:8px}
+.lyrics-section{margin:0 0 22px}
+.lyrics-label{margin:0 0 6px;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.lyrics-line{margin:0 0 4px;font-size:20px;line-height:1.5;overflow-wrap:anywhere}
+.lyrics-line.chord-plain{font-size:18px;line-height:1.4}
+.lyrics-empty{color:var(--muted)}
+.chord-line{display:flex;flex-wrap:wrap;align-items:flex-end;margin:0 0 6px}
+.chord-seg{display:inline-flex;flex-direction:column;min-width:0}
+.chord{min-height:1.3em;font-size:15px;font-weight:800;color:var(--accent);white-space:pre}
+.chord-text{font-size:18px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere}
+.chord-grid{margin:0 0 6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:16px;font-weight:700;color:var(--accent);white-space:pre-wrap;overflow-wrap:anywhere}
+.chord-editor{width:100%;min-height:360px;padding:12px;border:1px solid var(--line-strong);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px;line-height:1.5;outline:none}
+.chord-editor:focus{border-color:var(--accent)}
+
+@media(max-width:680px){.song-tabs{gap:2px}.song-tab{flex:1;padding:10px 4px;font-size:13px}}
+
+.paste-note{margin:0 auto 0 0;color:var(--muted);font-size:13px}
+.link-btn{padding:0;border:0;background:none;color:var(--accent);font-weight:700;text-decoration:underline;cursor:pointer}
+.lyrics-toolbar{gap:12px;align-items:center}
+
+.brand{gap:10px}
+.brand-logo{display:block;flex:none;width:auto;height:36px}
+.brand-name,.app-footer-brand{font-family:var(--sans);font-weight:800;letter-spacing:.04em}
+.brand-name span,.app-footer-brand span{font-weight:400}
+.brand-hero{display:block;width:min(280px,100%);height:auto;margin:0 auto 4px}
+:root[data-theme="dark"] .brand-logo,:root[data-theme="dark"] .brand-hero{filter:brightness(1.6)}
+@media(max-width:680px){.brand-logo{height:30px}.brand-name{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}}
+.section-layout{display:grid;grid-template-columns:200px minmax(0,1fr);flex:1;border:1px solid var(--line);border-top:0;border-radius:0 0 10px 10px;background:var(--surface);box-shadow:var(--shadow);overflow:hidden}
+.section-nav{display:flex;flex-direction:column;gap:4px;padding:18px 12px;border-right:1px solid var(--line);background:var(--surface-2)}
+.section-nav-link{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r-sm);color:var(--text);font-weight:700;text-decoration:none}
+.section-nav-link:hover{background:var(--surface)}
+.section-nav-link.active{background:var(--accent-soft);color:var(--accent)}
+.section-main{min-width:0;display:flex;flex-direction:column}
+.section-main .dash{border:0;border-radius:0;box-shadow:none}
+.section-nav.compact{flex-direction:row;gap:4px;padding:0;border:0;background:none}
+.section-nav.compact .section-nav-link{padding:8px 10px;border:1px solid var(--line-strong);font-size:13px}
+.event-owner{width:100%;padding:4px 0;border:0;background:transparent;color:var(--muted);font-size:14px;outline:none}
+.event-owner:focus{color:var(--text)}
+.eyebrow a{color:inherit;text-decoration:none}
+@media(max-width:680px){.section-layout{grid-template-columns:1fr}.section-nav{flex-direction:row;padding:8px;border-right:0;border-bottom:1px solid var(--line)}.section-nav-link{flex:1;justify-content:center;padding:8px 6px}.section-nav.compact .section-nav-link{flex:none;padding:7px 8px}.section-nav.compact .section-nav-label{display:none}}
+@media(max-width:680px){.top-actions{flex-wrap:wrap;justify-content:flex-end;row-gap:6px;min-width:0}.section-nav.compact .section-nav-link{padding:6px 7px}}
+.theme-add{display:flex;gap:8px;margin:18px 0}
+.theme-add .team-input{flex:1;min-width:0}
+.theme-edit{display:flex;align-items:center;gap:8px;flex:1;padding:10px 0;min-width:0}
+.theme-edit .team-input{flex:1;min-width:0}
+.lib-filters{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
+.lib-filters .team-input{flex:1 1 220px;min-width:0}
+.lib-filters .lib-theme-filter{flex:0 1 200px}
+.theme-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.theme-chip{padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:700}
+.song-fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px 12px;margin:12px 0}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0;color:var(--muted);font-size:12px;font-weight:700}
+.field input{min-width:0;padding:8px 10px;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--text);font-size:14px;font-weight:400;outline:none}
+.field input:focus{border-color:var(--accent)}
+.field-title{grid-column:span 2}
+.field-wide{grid-column:1/-1}
+.field-hint{color:var(--muted);font-size:12px;font-weight:400}
+.theme-picker{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;border:0}
+.theme-picker legend{margin-bottom:6px;padding:0}
+.theme-chip.toggle{border:1px solid var(--line-strong);background:var(--surface-2);color:var(--text);cursor:pointer}
+.theme-chip.toggle.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.theme-chip.toggle:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.lib-editor .chord-editor{min-height:280px}
+.lib-preview{margin-top:16px;padding:16px;border:1px dashed var(--line-strong);border-radius:var(--r-sm)}
+@media(max-width:680px){.field-title{grid-column:1/-1}}
+.theme-picker{flex-direction:row;align-items:center}
+
+.paste-box{display:flex;flex-direction:column;gap:10px;margin:16px 0}
+.paste-box .chord-editor{min-height:220px}
+.paste-box .btn{align-self:flex-start}
+.draft-list{display:flex;flex-direction:column;gap:14px;margin-top:16px}
+.draft-card{padding:14px 16px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface)}
+.draft-head{display:flex;align-items:center;gap:10px}
+.draft-label{flex:1;min-width:0;overflow-wrap:anywhere}
+.draft-preview{margin-top:8px}
+.draft-preview summary{margin-bottom:8px;color:var(--accent);font-weight:700;cursor:pointer}
+
+.draft-head{flex-wrap:wrap}
+.draft-head .upload-status{white-space:normal;overflow-wrap:anywhere;min-width:0}
+
+.tempo-control{display:inline-flex;gap:6px;margin-right:6px}
+.meta-field{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;min-height:56px;padding:4px 8px 6px;border:1.5px solid var(--line-strong);border-radius:12px}
+.meta-field span{color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+.meta-field input{width:56px;border:0;background:transparent;color:var(--text);font-size:16px;font-weight:800;text-align:center;outline:none}
+.meta-field:focus-within{border-color:var(--accent)}
+.tempo-badges{display:inline-flex;align-items:center;gap:6px;margin-right:6px}
+.tempo-badge{padding:6px 10px;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface-2);font-size:14px;font-weight:800}
+.lib-theme-chips{align-items:center;margin:-8px 0 14px;padding:0;border:0;min-width:0}
+.lib-theme-chips .theme-chip.toggle{padding:5px 12px;font-size:13px}
+.lib-updated{flex:none;padding-right:4px;white-space:nowrap}
+@media(max-width:680px){.lib-updated{font-size:12px}}
+.draft-confirm{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px}

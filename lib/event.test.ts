@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { colors, eventFromRow, randomShareToken, safeColor } from "./event.ts";
+import { colors, eventFromRow, filterEvents, formatMonth, migrationHint, monthKey, ownerOptions, randomShareToken, safeColor } from "./event.ts";
 
 test("eventFromRow turns a malformed row into a valid event", () => {
   const event = eventFromRow({
@@ -32,6 +32,7 @@ test("eventFromRow handles missing or non-array data", () => {
   assert.deepEqual(eventFromRow({ event_name: "Sunday", event_date: "2026-10-04", data: null }), {
     eventName: "Sunday",
     eventDate: "2026-10-04",
+    owner: "",
     songs: [],
     members: [],
   });
@@ -54,7 +55,7 @@ test("eventFromRow reads team members and cleans bad entries", () => {
 });
 
 test("eventFromRow keeps valid data unchanged", () => {
-  const songs = [{ id: "song-1", title: "Way Maker", baseKey: "E", sections: [{ id: "section-1", name: "Intro", color: "#93dfb2", note: "Soft\nkeys" }] }];
+  const songs = [{ id: "song-1", title: "Way Maker", baseKey: "E", rhythm: "3/4", bpm: 72, content: "[E]Way maker", librarySongId: "lib-1", sections: [{ id: "section-1", name: "Intro", color: "#93dfb2", note: "Soft\nkeys" }] }];
   assert.deepEqual(eventFromRow({ event_name: "A", event_date: "2026-10-04", data: { songs } }).songs, songs);
 });
 
@@ -68,4 +69,58 @@ test("randomShareToken is URL-safe and unique", () => {
   const a = randomShareToken();
   assert.match(a, /^[A-Za-z0-9_-]{24}$/);
   assert.notEqual(a, randomShareToken());
+});
+
+test("eventFromRow gives old songs empty content and no library id", () => {
+  const event = eventFromRow({ event_name: null, event_date: null, data: { songs: [{ id: "s1", title: "Old", baseKey: "G", sections: [] }, { content: 5, librarySongId: 7 }] } });
+  assert.equal(event.songs[0].content, "");
+  assert.ok(!("librarySongId" in event.songs[0]));
+  assert.equal(event.songs[1].content, "");
+  assert.ok(!("librarySongId" in event.songs[1]));
+});
+
+test("eventFromRow reads owner and cleans rhythm and bpm", () => {
+  const event = eventFromRow({ event_name: null, event_date: null, owner: "Team A", data: { songs: [{ rhythm: "6/8", bpm: 120 }, { rhythm: 5, bpm: 72.5 }, { bpm: 900 }, {}] } });
+  assert.equal(event.owner, "Team A");
+  assert.deepEqual(event.songs.map((s) => [s.rhythm, s.bpm]), [["6/8", 120], ["", null], ["", null], ["", null]]);
+  assert.equal(eventFromRow({ event_name: null, event_date: null, data: null }).owner, "");
+});
+
+test("migrationHint points at migration 005 only for its missing columns", () => {
+  assert.match(migrationHint("column events.owner does not exist"), /005_library_details\.sql/);
+  assert.match(migrationHint("Could not find the table 'public.themes' in the schema cache"), /005_library_details\.sql/);
+  assert.equal(migrationHint("JWT expired"), "JWT expired");
+});
+
+test("migrationHint points at migration 006 for the songs' updated_at", () => {
+  assert.match(migrationHint("column songs.updated_at does not exist"), /006_song_updated_at\.sql/);
+  assert.doesNotMatch(migrationHint("column events.owner does not exist"), /006/);
+});
+
+const evs = [
+  { id: "a", event_date: "2026-10-04", owner: "Josia" },
+  { id: "b", event_date: null, owner: null },
+  { id: "c", event_date: "2026-11-01", owner: " Maria " },
+  { id: "d", event_date: "2026-10-18", owner: "Josia" },
+];
+
+test("monthKey and formatMonth", () => {
+  assert.equal(monthKey("2026-10-04"), "2026-10");
+  assert.equal(monthKey(null), "");
+  assert.equal(monthKey("soon"), "");
+  assert.equal(formatMonth("2026-10"), "Oct 2026");
+});
+
+test("ownerOptions lists each trimmed owner once, A-Z", () => {
+  assert.deepEqual(ownerOptions(evs), ["Josia", "Maria"]);
+});
+
+test("filterEvents filters by owner and month and sorts by date with undated last", () => {
+  const ids = (o: Parameters<typeof filterEvents>[1]) => filterEvents(evs, o).map((e) => e.id);
+  assert.deepEqual(ids({ owner: "", month: "", ascending: false }), ["c", "d", "a", "b"]);
+  assert.deepEqual(ids({ owner: "", month: "", ascending: true }), ["a", "d", "c", "b"]);
+  assert.deepEqual(ids({ owner: "Josia", month: "", ascending: true }), ["a", "d"]);
+  assert.deepEqual(ids({ owner: "Maria", month: "", ascending: true }), ["c"]);
+  assert.deepEqual(ids({ owner: "", month: "2026-10", ascending: false }), ["d", "a"]);
+  assert.deepEqual(evs.map((e) => e.id), ["a", "b", "c", "d"]);
 });

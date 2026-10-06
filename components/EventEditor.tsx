@@ -1,19 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
+import AddSongDialog from "./AddSongDialog";
 import AppShell from "./AppShell";
 import Icon from "./Icon";
+import KeyControl from "./KeyControl";
+import SectionNav from "./SectionNav";
+import SongTabs from "./SongTabs";
 import TeamDialog from "./TeamDialog";
+import TempoControl from "./TempoControl";
 import ThemeToggle from "./ThemeToggle";
-import { colors, safeColor, uid, type Section, type SetlistEvent, type Song } from "@/lib/event";
+import { keyStep, transpose } from "@/lib/chordpro";
+import { migrationHint, type SetlistEvent, type Song } from "@/lib/event";
 import { exportSongImage } from "@/lib/exportPng";
 import { createClient } from "@/lib/supabase/client";
 
 type Props = { initial: SetlistEvent; eventId?: string; shareToken?: string | null; readOnly?: boolean };
 
 const songNumber = (i: number) => String(i + 1).padStart(2, "0");
-const tagColor = (color: string) => ({ "--tag-color": safeColor(color) }) as CSSProperties;
+
+function swap<T>(items: T[], i: number, j: number) {
+  if (j < 0 || j >= items.length) return items;
+  const copy = [...items];
+  [copy[i], copy[j]] = [copy[j], copy[i]];
+  return copy;
+}
 
 export default function EventEditor({ initial, eventId, shareToken = null, readOnly = false }: Props) {
   const [event, setEvent] = useState(initial);
@@ -23,13 +35,16 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
+  const [viewKeys, setViewKeys] = useState<Record<string, string>>({}); // share links: per-song display key, never saved
   const focusId = useRef<string | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const revision = useRef(0);
+  const leavingRef = useRef(false); // set once the user confirmed leaving, so beforeunload doesn't ask again
 
   useEffect(() => {
     if (!dirty) return;
     const warn = (e: BeforeUnloadEvent) => {
+      if (leavingRef.current) return;
       e.preventDefault();
       e.returnValue = "";
     };
@@ -63,6 +78,8 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
 
   const song = event.songs.find((s) => s.id === activeSongId) ?? event.songs[0] ?? null;
   const index = song ? event.songs.indexOf(song) : -1;
+  const displayKey = song ? (viewKeys[song.id] ?? song.baseKey) : "";
+  const displayContent = song && readOnly && displayKey !== song.baseKey ? transpose(song.content, song.baseKey, displayKey) : (song?.content ?? "");
 
   function update(next: SetlistEvent) {
     revision.current++;
@@ -72,21 +89,11 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
   function updateSong(id: string, fn: (s: Song) => Song) {
     update({ ...event, songs: event.songs.map((s) => (s.id === id ? fn(s) : s)) });
   }
-  function updateSections(fn: (sections: Section[]) => Section[]) {
-    if (song) updateSong(song.id, (s) => ({ ...s, sections: fn(s.sections) }));
-  }
-  function swap<T>(items: T[], i: number, j: number) {
-    if (j < 0 || j >= items.length) return items;
-    const copy = [...items];
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-    return copy;
-  }
 
-  function addSong() {
-    const s: Song = { id: uid("song"), title: "", baseKey: "", sections: [] };
+  function addSong(s: Song) {
     update({ ...event, songs: [...event.songs, s] });
     setActiveSongId(s.id);
-    focusId.current = s.id;
+    if (!s.title) focusId.current = s.id;
   }
   function deleteSong() {
     if (!song) return;
@@ -98,24 +105,18 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
   function moveSong(direction: number) {
     update({ ...event, songs: swap(event.songs, index, index + direction) });
   }
-  function addDetail() {
+  function stepKey(steps: number) {
     if (!song) return;
-    const section: Section = { id: uid("section"), name: "", color: colors[song.sections.length % colors.length], note: "" };
-    updateSections((sections) => [...sections, section]);
-    focusId.current = section.id;
+    const next = keyStep(song.baseKey, steps);
+    if (next) updateSong(song.id, (s) => ({ ...s, baseKey: next, content: transpose(s.content, s.baseKey, next) }));
   }
-  function setSection(i: number, patch: Partial<Section>) {
-    updateSections((sections) => sections.map((s, j) => (j === i ? { ...s, ...patch } : s)));
-  }
-  function deleteDetail(i: number) {
+  function stepView(steps: number) {
     if (!song) return;
-    if (!confirm(`Delete "${song.sections[i].name.trim() || "this song detail"}"?`)) return;
-    updateSections((sections) => sections.filter((_, j) => j !== i));
+    const next = keyStep(displayKey, steps);
+    if (next) setViewKeys({ ...viewKeys, [song.id]: next });
   }
-  function cycleColor(i: number) {
-    if (!song) return;
-    const current = safeColor(song.sections[i].color).toLowerCase();
-    setSection(i, { color: colors[(colors.findIndex((c) => c.toLowerCase() === current) + 1) % colors.length] });
+  function resetView() {
+    if (song) setViewKeys(Object.fromEntries(Object.entries(viewKeys).filter(([id]) => id !== song.id)));
   }
   function exportPng() {
     if (song) exportSongImage(event, song, document.documentElement.dataset.theme === "dark");
@@ -127,7 +128,7 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
     setSaving("saving");
     const { error } = await createClient()
       .from("events")
-      .update({ event_name: event.eventName.trim() || null, event_date: event.eventDate || null, data: { songs: event.songs }, members: event.members, updated_at: new Date().toISOString() })
+      .update({ event_name: event.eventName.trim() || null, event_date: event.eventDate || null, owner: event.owner.trim() || null, data: { songs: event.songs }, members: event.members, updated_at: new Date().toISOString() })
       .eq("id", eventId)
       .select("id")
       .single();
@@ -136,7 +137,7 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
       setError(
         error.code === "PGRST116"
           ? "You're signed out, or this event isn't yours. Log in again in another tab, then press Save — your changes are still here."
-          : `Could not save event: ${error.message}`,
+          : `Could not save event: ${migrationHint(error.message)}`,
       );
       return;
     }
@@ -161,16 +162,7 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
     <ThemeToggle />
   ) : (
     <>
-      <Link
-        className="btn"
-        href="/dashboard"
-        aria-label="Dashboard"
-        onClick={(e) => {
-          if (dirty && !confirm("Leave without saving your changes?")) e.preventDefault();
-        }}
-      >
-        ←<span className="btn-label"> Dashboard</span>
-      </Link>
+      <SectionNav compact confirmLeave={() => !dirty || (leavingRef.current = confirm("Leave without saving your changes?"))} />
       <button className="btn primary" type="button" onClick={save} disabled={saving === "saving"}>
         {saving === "saving" ? "Saving…" : saving === "saved" ? "Saved" : "Save"}
       </button>
@@ -217,17 +209,22 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
                 aria-label="Event date"
               />
             )}
+            {!(readOnly && !event.owner.trim()) && (
+              <input
+                className="event-owner"
+                value={event.owner}
+                onChange={(e) => update({ ...event, owner: e.target.value })}
+                readOnly={readOnly}
+                aria-label="Event owner"
+                placeholder="Owner"
+              />
+            )}
             <TeamDialog members={event.members} readOnly={readOnly} onChange={(members) => update({ ...event, members })} />
           </div>
           <nav className="song-nav" aria-label="Songs">
             <div className="nav-heading">
               <div className="nav-heading-title">SONGS</div>
-              {!readOnly && (
-                <button className="btn primary compact" type="button" onClick={addSong}>
-                  <Icon name="plus" />
-                  Add Song
-                </button>
-              )}
+              {!readOnly && <AddSongDialog onAdd={addSong} />}
             </div>
             <div className="song-list">
               {event.songs.length === 0 ? (
@@ -287,22 +284,14 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
                   )}
                   <div className="header-song-actions">
                     {readOnly ? (
-                      <div className="key-badge" title="Base key" aria-label={`Base key ${song.baseKey.trim() || "not set"}`}>
-                        <span aria-hidden="true">Key</span>
-                        <strong aria-hidden="true">{song.baseKey.trim() || "—"}</strong>
-                      </div>
+                      <>
+                        <KeyControl value={displayKey} readOnly onStep={stepView} onReset={displayKey !== song.baseKey ? resetView : undefined} />
+                        <TempoControl key={song.id} rhythm={song.rhythm} bpm={song.bpm} readOnly onChange={() => {}} />
+                      </>
                     ) : (
                       <>
-                        <label className="key-field">
-                          <span>Key</span>
-                          <input
-                            className="key-input"
-                            value={song.baseKey}
-                            onChange={(e) => updateSong(song.id, (s) => ({ ...s, baseKey: e.target.value }))}
-                            placeholder="—"
-                            aria-label="Base key"
-                          />
-                        </label>
+                        <KeyControl value={song.baseKey} readOnly={false} onStep={stepKey} onType={(v) => updateSong(song.id, (s) => ({ ...s, baseKey: v }))} />
+                        <TempoControl key={song.id} rhythm={song.rhythm} bpm={song.bpm} readOnly={false} onChange={(patch) => updateSong(song.id, (s) => ({ ...s, ...patch }))} />
                         <button className="icon-btn" type="button" title="Move song up" aria-label="Move song up" disabled={index === 0} onClick={() => moveSong(-1)}><Icon name="up" /></button>
                         <button className="icon-btn" type="button" title="Move song down" aria-label="Move song down" disabled={index === event.songs.length - 1} onClick={() => moveSong(1)}><Icon name="down" /></button>
                         <button className="icon-btn danger" type="button" title="Delete song" aria-label="Delete song" onClick={deleteSong}><Icon name="trash" /></button>
@@ -313,56 +302,14 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
                 </div>
               </div>
 
-              <div className="main-content">
-                <div className="section-label">SONG DETAILS</div>
-                <div className="details">
-                  {song.sections.length === 0 ? (
-                    <div className="empty-detail">{readOnly ? "This song has no details yet." : "No song details yet. Add a section to start building this song."}</div>
-                  ) : (
-                    song.sections.map((section, i) =>
-                      readOnly ? (
-                        <div className="detail-row" key={section.id} style={tagColor(section.color)}>
-                          <div className="detail-name-wrap">
-                            <span className="color-dot static" style={tagColor(section.color)} aria-hidden="true" />
-                            <div className="view-detail-name">{section.name.trim() || "Untitled"}</div>
-                          </div>
-                          <div className="view-detail-note">{section.note}</div>
-                        </div>
-                      ) : (
-                        <div className="detail-row" key={section.id} style={tagColor(section.color)}>
-                          <div className="detail-name-wrap">
-                            <button className="color-dot" type="button" style={tagColor(section.color)} title="Change section color" aria-label="Change section color" onClick={() => cycleColor(i)} />
-                            <input
-                              className="detail-name-input"
-                              data-focus={section.id}
-                              value={section.name}
-                              onChange={(e) => setSection(i, { name: e.target.value })}
-                              aria-label="Song detail name"
-                              placeholder="Song detail name"
-                            />
-                          </div>
-                          <textarea
-                            className="detail-note"
-                            rows={1}
-                            value={section.note}
-                            onChange={(e) => setSection(i, { note: e.target.value })}
-                            aria-label={`Notes for ${section.name || "song detail"}`}
-                            placeholder="Add notes..."
-                          />
-                          <div className="detail-tools">
-                            <button className="icon-btn" type="button" title="Move up" aria-label="Move song detail up" disabled={i === 0} onClick={() => updateSections((s) => swap(s, i, i - 1))}><Icon name="up" /></button>
-                            <button className="icon-btn" type="button" title="Move down" aria-label="Move song detail down" disabled={i === song.sections.length - 1} onClick={() => updateSections((s) => swap(s, i, i + 1))}><Icon name="down" /></button>
-                            <button className="icon-btn danger" type="button" title="Delete song detail" aria-label="Delete song detail" onClick={() => deleteDetail(i)}><Icon name="trash" /></button>
-                          </div>
-                        </div>
-                      ),
-                    )
-                  )}
-                </div>
-                {!readOnly && (
-                  <button className="btn add-detail" type="button" onClick={addDetail}><Icon name="plus" />Add Song Detail</button>
-                )}
-              </div>
+              <SongTabs
+                song={song}
+                content={displayContent}
+                readOnly={readOnly}
+                onContentChange={(content) => updateSong(song.id, (s) => ({ ...s, content }))}
+                onSectionsChange={(sections) => updateSong(song.id, (s) => ({ ...s, sections }))}
+                onSongChange={(next) => updateSong(song.id, () => next)}
+              />
 
               <div className="main-bottom">
                 <div className="song-position">Song {songNumber(index)} of {event.songs.length}</div>
