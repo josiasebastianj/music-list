@@ -1,8 +1,8 @@
 # MDCHORD
 
-**Version:** 3.2.0
+**Version:** 3.4.0
 
-MDCHORD (*One Church. One Sound. One Jesus.*) builds worship setlists. An Event holds Songs, and each Song holds Song Details (a name, a colour and a note). You can export a song as a PNG and share a read-only link to an event. A dashboard lists your events.
+MDCHORD (*One Church. One Sound. One Jesus.*) builds worship setlists. An Event holds Songs, and each Song holds Song Details (a name, a colour and a note). You can export a song as a PNG (pick Lyrics Only, Lyrics + Chords or Section Notes) and share a read-only link to an event. A dashboard lists your events.
 
 It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 
@@ -83,7 +83,7 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 ## Using the app
 
 - **Events** (`/dashboard`): lists events (name, date, song count, owner). Filter by **Owner** and **month**, and sort by event date with **Date ↑ / ↓** (newest first by default; undated events last). Each row has **Edit** (or click the title), **Share** (copies the read-only link) and **Delete**. **New event** creates an empty event and opens it.
-- **Editor:** **+ Add Song** opens a search. Type at least 3 letters of the title or any lyric line, then pick a song to import its lyrics, chords and key. **Add blank song** adds an empty one. You can also reorder and delete songs and song details, cycle colours, export a song as PNG. **Team** (under the event date) opens a pop-up to add, edit and remove team members, each with a free-text name and role. **Save** stores the event. **Share** copies the read-only link. The **Events**, **Library** and **Theme** links in the top bar go back to those pages. The browser warns before you leave with unsaved changes, including with the Back button.
+- **Editor:** **+ Add Song** opens a search. Type at least 3 letters of the title or any lyric line, then pick a song to import its lyrics, chords and key. **Add blank song** adds an empty one. You can also reorder and delete songs and song details, cycle colours, export a song as PNG (pick Lyrics Only, Lyrics + Chords or Section Notes). **Team** (under the event date) opens a pop-up to add, edit and remove team members, each with a free-text name and role. **Save** stores the event. **Share** copies the read-only link. The **Events**, **Library** and **Theme** links in the top bar go back to those pages. The browser warns before you leave with unsaved changes, including with the Back button.
 - **Song tabs:** **Lyrics Only** (large lyrics, no chords), **Lyrics + Chords** (chords above the words, instrumental bars as `| E . . . |`; **Edit** shows the ChordPro text), **Section Notes** (the song details).
 - **Paste a chord sheet:** after **Add blank song**, open **Lyrics + Chords** and paste a chord sheet copied from the web (chords on their own line above the lyrics). It's converted to ChordPro, and the song's empty title, key and Section Notes are filled in from it. **Undo** restores exactly what you pasted. ChordPro text and plain lyrics are pasted as they are. Some sites lose their chord alignment when copied; if chords land a few letters off, fix them with **Edit**.
 - **Key:** − and + move the song one semitone and rewrite its chords. On a share link they change only your view; **Reset** returns to the event's key.
@@ -103,7 +103,7 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 | `npm run build` | Builds for production |
 | `npm run start` | Runs the production build |
 | `npm run lint` | Runs ESLint |
-| `npm test` | Runs `lib/event.test.ts`, `lib/chordpro.test.ts` and `lib/library.test.ts` with Node's test runner |
+| `npm test` | Runs `lib/event.test.ts`, `lib/chordpro.test.ts`, `lib/library.test.ts` and `lib/exportPng.test.ts` with Node's test runner |
 
 On a fresh clone, `npx tsc --noEmit` needs `npm run dev`, `npm run build` or `npx next typegen` to have run first. `next-env.d.ts` and `.next/types` are generated and git-ignored.
 
@@ -153,6 +153,7 @@ components/
   AppShell.tsx                top bar, page frame, footer
   ChordSheet.tsx              chord sheet display shared by the library and events
   EventEditor.tsx             sidebar + song workspace; edit and read-only modes
+  ExportDialog.tsx            Export PNG pop-up (Lyrics Only, Lyrics + Chords, Section Notes)
   Icon.tsx                    SVG icons
   KeyControl.tsx              key - / + buttons and Reset
   SectionLayout.tsx           page layout with the sidebar
@@ -169,6 +170,7 @@ lib/
   event.ts                    types (Event, Song, Section, Member), eventFromRow, safeColor, colors, formatEventDate, randomShareToken
   event.test.ts               runnable check: node --test
   exportPng.ts                PNG export
+  exportPng.test.ts           runnable check: node --test
   library.ts                  library helpers (drafts, themes, filters)
   library.test.ts             runnable check: node --test
   supabase/client.ts          browser client
