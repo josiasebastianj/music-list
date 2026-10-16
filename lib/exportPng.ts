@@ -1,4 +1,5 @@
-import { APP_VERSION, formatEventDate, safeColor, type SetlistEvent, type Song } from "./event";
+import { APP_VERSION, formatEventDate, safeColor, type SetlistEvent, type Song } from "./event.ts";
+import { type Segment } from "./chordpro.ts";
 
 function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
   const out: string[] = [];
@@ -33,6 +34,49 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.arcTo(x, y + h, x, y, rr);
   ctx.arcTo(x, y, x + w, y, rr);
   ctx.closePath();
+}
+
+export type ExportVersion = "lyrics" | "chords" | "notes";
+export type Placed = { x: number; text: string };
+
+const VERSION_SUFFIX: Record<ExportVersion, string> = { lyrics: " - Lyrics", chords: " - Chords", notes: "" };
+
+export function exportFileName(title: string, version: ExportVersion): string {
+  const safe = title.replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, " ").trim() || "song-structure";
+  return safe + VERSION_SUFFIX[version] + ".png";
+}
+
+// Lays out chord/lyric rows; x is relative to the content's left edge.
+// ponytail: a single word wider than maxWidth is not split further.
+export function layoutChordLine(segments: Segment[], maxWidth: number, measure: (s: string) => number): { chords: Placed[]; lyrics: Placed[] }[] {
+  const rows: { chords: Placed[]; lyrics: Placed[] }[] = [];
+  let row = { chords: [] as Placed[], lyrics: [] as Placed[] }, x = 0;
+  const newRow = () => { rows.push(row); row = { chords: [], lyrics: [] }; x = 0; };
+  for (const { chord, text } of segments) {
+    const w = Math.max(measure(text), chord ? measure(chord) + measure(" ") : 0);
+    if (x > 0 && x + w > maxWidth) newRow();
+    if (w <= maxWidth) {
+      if (chord) row.chords.push({ x, text: chord });
+      row.lyrics.push({ x, text });
+      x += w;
+      continue;
+    }
+    let piece = "", first = true;
+    const flush = () => {
+      if (first && chord) row.chords.push({ x: 0, text: chord });
+      row.lyrics.push({ x: 0, text: piece });
+      x = measure(piece);
+      first = false;
+    };
+    for (const word of text.split(/\s+/).filter(Boolean)) {
+      const next = piece ? piece + " " + word : word;
+      if (piece && measure(next) > maxWidth) { flush(); newRow(); piece = word; }
+      else piece = next;
+    }
+    flush();
+  }
+  rows.push(row);
+  return rows;
 }
 
 export function exportSongImage(event: SetlistEvent, song: Song, dark: boolean) {
@@ -115,8 +159,7 @@ export function exportSongImage(event: SetlistEvent, song: Song, dark: boolean) 
   ctx.fillText("Version: " + APP_VERSION, pad + 360, footerY + 27);
 
   const link = document.createElement("a");
-  const safeFilename = title.replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, " ").trim() || "song-structure";
-  link.download = safeFilename + ".png";
+  link.download = exportFileName(title, "notes");
   link.href = c.toDataURL("image/png");
   link.click();
 }
