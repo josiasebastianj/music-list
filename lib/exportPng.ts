@@ -1,5 +1,5 @@
 import { APP_VERSION, formatEventDate, safeColor, type SetlistEvent, type Song } from "./event.ts";
-import { type Segment } from "./chordpro.ts";
+import { lyricLines, parseChordPro, type Segment } from "./chordpro.ts";
 
 function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
   const out: string[] = [];
@@ -79,7 +79,7 @@ export function layoutChordLine(segments: Segment[], maxWidth: number, measure: 
   return rows;
 }
 
-export function exportSongImage(event: SetlistEvent, song: Song, dark: boolean) {
+export function exportSongImage(event: SetlistEvent, song: Song, dark: boolean, version: ExportVersion = "notes") {
   const scale = 2, width = 1200, pad = 60, cw = width - pad * 2, gap = 14;
   const title = song.title.trim() || "Song Title", baseKey = song.baseKey.trim(), eventName = event.eventName.trim(), eventDate = formatEventDate(event.eventDate), sections = song.sections;
   const palette = dark
@@ -106,8 +106,71 @@ export function exportSongImage(event: SetlistEvent, song: Song, dark: boolean) 
     return { nameLines, noteLines, h: Math.max(72, Math.max(nameHeight, noteHeight) + 24) };
   };
 
+  // Body: a label plus a list of blocks, each with its height and a draw(y) step.
+  type Block = { h: number; draw: (y: number) => void };
+  let bodyLabel = "SONG DETAILS";
+  const blocks: Block[] = [];
+  if (version === "notes") {
+    sections.forEach((s) => {
+      blocks.push({ h: measure(s).h + gap, draw: (y) => {
+        const accent = safeColor(s.color), { nameLines, noteLines, h } = measure(s);
+        ctx.fillStyle = palette.surface; ctx.strokeStyle = accent + "99"; ctx.lineWidth = 1;
+        roundRect(ctx, pad, y, cw, h, 10); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = accent; ctx.fillRect(pad, y, 7, h);
+        ctx.beginPath(); ctx.arc(pad + 34, y + 36, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = palette.text; ctx.font = "700 22px Inter,Arial,sans-serif";
+        nameLines.forEach((line, i) => ctx.fillText(line, pad + 52, y + 42 + i * 29));
+        ctx.strokeStyle = palette.line; ctx.beginPath(); ctx.moveTo(pad + leftW, y + 18); ctx.lineTo(pad + leftW, y + h - 18); ctx.stroke();
+        if (noteLines.length) {
+          ctx.fillStyle = palette.text; ctx.font = "500 20px Inter,Arial,sans-serif";
+          noteLines.forEach((line, i) => ctx.fillText(line, pad + leftW + 24, y + 42 + i * 30));
+        }
+      } });
+    });
+  } else {
+    const secLabel = (label: string) => {
+      if (label) blocks.push({ h: 26, draw: (y) => { ctx.fillStyle = palette.muted; ctx.font = "800 14px Inter,Arial,sans-serif"; ctx.fillText(label.toUpperCase(), pad, y + 14); } });
+    };
+    const parsed = parseChordPro(song.content);
+    if (version === "lyrics") {
+      bodyLabel = "LYRICS";
+      lyricLines(parsed).forEach((sec) => {
+        secLabel(sec.label);
+        m.font = "500 22px Inter,Arial,sans-serif";
+        sec.lines.forEach((line) => wrapLines(m, line, cw).forEach((t) => {
+          blocks.push({ h: 32, draw: (y) => { ctx.fillStyle = palette.text; ctx.font = "500 22px Inter,Arial,sans-serif"; ctx.fillText(t, pad, y + 22); } });
+        }));
+        blocks.push({ h: 14, draw: () => {} });
+      });
+    } else {
+      bodyLabel = "LYRICS + CHORDS";
+      const chordFont = '700 20px "Courier New",monospace', lyricFont = '500 20px "Courier New",monospace';
+      parsed.sections.forEach((sec) => {
+        secLabel(sec.label);
+        m.font = lyricFont;
+        const measureText = (t: string) => m.measureText(t).width;
+        sec.lines.forEach((line) => {
+          if (line.type === "grid") {
+            const text = line.cells.join(" ");
+            blocks.push({ h: 30, draw: (y) => { ctx.fillStyle = palette.text; ctx.font = lyricFont; ctx.fillText(text, pad, y + 20); } });
+            return;
+          }
+          layoutChordLine(line.segments, cw, measureText).forEach((row) => {
+            const hasChords = row.chords.length > 0;
+            blocks.push({ h: hasChords ? 56 : 30, draw: (y) => {
+              if (hasChords) { ctx.fillStyle = palette.keyLine; ctx.font = chordFont; row.chords.forEach((p) => ctx.fillText(p.text, pad + p.x, y + 20)); }
+              ctx.fillStyle = palette.text; ctx.font = lyricFont;
+              row.lyrics.forEach((p) => ctx.fillText(p.text, pad + p.x, y + (hasChords ? 46 : 20)));
+            } });
+          });
+        });
+        blocks.push({ h: 14, draw: () => {} });
+      });
+    }
+  }
+
   let total = songDetailsLabelY + 34;
-  sections.forEach((s) => { total += measure(s).h + gap; });
+  blocks.forEach((b) => { total += b.h; });
   total += 70 + pad;
 
   const c = document.createElement("canvas");
@@ -133,23 +196,9 @@ export function exportSongImage(event: SetlistEvent, song: Song, dark: boolean) 
   ctx.fillText(keyText, keyX + keyW / 2 - ctx.measureText(keyText).width / 2, keyY + 82);
 
   let y = songDetailsLabelY + 30;
-  ctx.fillStyle = palette.muted; ctx.font = "800 14px Inter,Arial,sans-serif"; ctx.fillText("SONG DETAILS", pad, y);
+  ctx.fillStyle = palette.muted; ctx.font = "800 14px Inter,Arial,sans-serif"; ctx.fillText(bodyLabel, pad, y);
   y += 28;
-  sections.forEach((s) => {
-    const accent = safeColor(s.color), { nameLines, noteLines, h } = measure(s);
-    ctx.fillStyle = palette.surface; ctx.strokeStyle = accent + "99"; ctx.lineWidth = 1;
-    roundRect(ctx, pad, y, cw, h, 10); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = accent; ctx.fillRect(pad, y, 7, h);
-    ctx.beginPath(); ctx.arc(pad + 34, y + 36, 7, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = palette.text; ctx.font = "700 22px Inter,Arial,sans-serif";
-    nameLines.forEach((line, i) => ctx.fillText(line, pad + 52, y + 42 + i * 29));
-    ctx.strokeStyle = palette.line; ctx.beginPath(); ctx.moveTo(pad + leftW, y + 18); ctx.lineTo(pad + leftW, y + h - 18); ctx.stroke();
-    if (noteLines.length) {
-      ctx.fillStyle = palette.text; ctx.font = "500 20px Inter,Arial,sans-serif";
-      noteLines.forEach((line, i) => ctx.fillText(line, pad + leftW + 24, y + 42 + i * 30));
-    }
-    y += h + gap;
-  });
+  blocks.forEach((b) => { b.draw(y); y += b.h; });
 
   const footerY = y + 10;
   ctx.strokeStyle = palette.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(pad, footerY); ctx.lineTo(pad + cw, footerY); ctx.stroke();
@@ -159,7 +208,7 @@ export function exportSongImage(event: SetlistEvent, song: Song, dark: boolean) 
   ctx.fillText("Version: " + APP_VERSION, pad + 360, footerY + 27);
 
   const link = document.createElement("a");
-  link.download = exportFileName(title, "notes");
+  link.download = exportFileName(title, version);
   link.href = c.toDataURL("image/png");
   link.click();
 }
