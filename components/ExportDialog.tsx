@@ -8,13 +8,14 @@ type Props = { hasLyrics: boolean; onPick: (v: ExportVersion) => void };
 
 export default function ExportDialog({ hasLyrics, onPick }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
   const pick = (v: ExportVersion) => { dialogRef.current?.close(); onPick(v); };
   const lyricsNote = !hasLyrics && <span className="export-choice-note">No lyrics yet</span>;
 
   return (
     <>
-      <button className="export-btn" type="button" onClick={() => dialogRef.current?.showModal()}><Icon name="image" />Export PNG</button>
+      <button className="export-btn" type="button" onClick={() => { dialogRef.current?.showModal(); cancelRef.current?.focus(); }}><Icon name="image" />Export PNG</button>
       <dialog
         ref={dialogRef}
         className="share-dialog"
@@ -30,9 +31,9 @@ export default function ExportDialog({ hasLyrics, onPick }: Props) {
           <button className="btn export-choice" type="button" disabled={!hasLyrics} onClick={() => pick("chords")}>
             <span>Lyrics + Chords{lyricsNote}</span>
           </button>
-          <button className="btn export-choice" type="button" onClick={() => pick("notes")}>Section Notes</button>
+          <button className="btn export-choice" type="button" onClick={() => pick("notes")}><span>Section Notes</span></button>
           <div className="share-dialog-actions">
-            <button className="btn" type="submit" autoFocus>Cancel</button>
+            <button className="btn" type="submit" ref={cancelRef}>Cancel</button>
           </div>
         </form>
       </dialog>
