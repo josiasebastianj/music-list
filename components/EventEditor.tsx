@@ -13,7 +13,8 @@ import TempoControl from "./TempoControl";
 import ThemeToggle from "./ThemeToggle";
 import { keyStep, transpose } from "@/lib/chordpro";
 import { migrationHint, type SetlistEvent, type Song } from "@/lib/event";
-import { exportSongImage } from "@/lib/exportPng";
+import { exportSongImage, type ExportVersion } from "@/lib/exportPng";
+import ExportDialog from "./ExportDialog";
 import { createClient } from "@/lib/supabase/client";
 
 type Props = { initial: SetlistEvent; eventId?: string; shareToken?: string | null; readOnly?: boolean };
@@ -118,8 +119,8 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
   function resetView() {
     if (song) setViewKeys(Object.fromEntries(Object.entries(viewKeys).filter(([id]) => id !== song.id)));
   }
-  function exportPng() {
-    if (song) exportSongImage(event, song, document.documentElement.dataset.theme === "dark");
+  function exportPng(version: ExportVersion) {
+    if (song) exportSongImage(event, { ...song, baseKey: displayKey, content: displayContent }, document.documentElement.dataset.theme === "dark", version);
   }
 
   async function save() {
@@ -297,7 +298,7 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
                         <button className="icon-btn danger" type="button" title="Delete song" aria-label="Delete song" onClick={deleteSong}><Icon name="trash" /></button>
                       </>
                     )}
-                    <button className="export-btn" type="button" onClick={exportPng}><Icon name="image" />Export PNG</button>
+                    <ExportDialog hasLyrics={displayContent.trim() !== ""} onPick={exportPng} />
                   </div>
                 </div>
               </div>
@@ -313,7 +314,7 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
 
               <div className="main-bottom">
                 <div className="song-position">Song {songNumber(index)} of {event.songs.length}</div>
-                {!readOnly && <button className="export-btn" type="button" onClick={exportPng}><Icon name="image" />Export PNG</button>}
+                {!readOnly && <ExportDialog hasLyrics={displayContent.trim() !== ""} onPick={exportPng} />}
               </div>
             </>
           )}

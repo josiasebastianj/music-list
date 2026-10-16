@@ -153,6 +153,8 @@ button.color-dot:hover::after{transform:scale(1.2)}
 .share-dialog-url{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--line-strong);border-radius:var(--r-sm);background:var(--surface-2);font-size:14px;outline:none}
 .share-dialog-url:focus{border-color:var(--accent)}
 .share-dialog-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin-top:4px}
+.export-choice{width:100%;justify-content:flex-start}
+.export-choice-note{display:block;font-size:12px;opacity:.7}
 
 @media(max-width:900px){
   .app{padding:16px 12px 24px}
