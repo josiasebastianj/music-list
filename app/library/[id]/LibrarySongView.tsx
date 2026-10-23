@@ -9,7 +9,6 @@ import SongTabs from "@/components/SongTabs";
 import { parseChordPro } from "@/lib/chordpro";
 import { migrationHint } from "@/lib/event";
 import { byName, fieldsFrom, songMetaLine, toSongRow, validateFields, type Fields, type LibrarySong, type Theme } from "@/lib/library";
-import { sectionNotesFrom } from "@/lib/songContent";
 import { createClient } from "@/lib/supabase/client";
 
 const noop = () => {};
@@ -102,7 +101,7 @@ export default function LibrarySongView({ initial, themes, actions }: { initial:
     window.location.assign(new URL("/library", window.location.origin).href);
   }
 
-  const asEventSong = { id: song.id, title: song.title, baseKey: song.song_key, rhythm: song.rhythm ?? "", bpm: song.bpm, content: song.content, sections: sectionNotesFrom(song.content) };
+  const asEventSong = { id: song.id, title: song.title, baseKey: song.song_key, rhythm: song.rhythm ?? "", bpm: song.bpm, url: song.url ?? "", content: song.content, sections: [] };
 
   return (
     <SectionLayout current="library" actions={actions} confirmLeave={() => !(editing && dirty) || (leavingRef.current = confirm("Leave without saving your changes?"))}>
@@ -114,6 +113,7 @@ export default function LibrarySongView({ initial, themes, actions }: { initial:
           <div className="eyebrow"><a href="/library">LIBRARY</a></div>
           <h1 className="dash-title">{song.title}</h1>
           <div className="dash-sub">{songMetaLine(song)}</div>
+          {song.url && <a className="dash-sub" href={song.url} target="_blank" rel="noopener noreferrer">{song.url}</a>}
           {song.themes.length > 0 && (
             <div className="theme-chips">
               {song.themes.map((t) => (

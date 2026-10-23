@@ -1,6 +1,6 @@
 # MDCHORD
 
-**Version:** 3.4.0
+**Version:** 3.5.0
 
 MDCHORD (*One Church. One Sound. One Jesus.*) builds worship setlists. An Event holds Songs, and each Song holds Song Details (a name, a colour and a note). You can export a song as a PNG (pick Lyrics Only, Lyrics + Chords or Section Notes) and share a read-only link to an event. A dashboard lists your events.
 
@@ -9,7 +9,7 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 ## Current status
 
 - **Testing mode.** Everyone logs in with one shared password to one shared Supabase account. There is no sign-up and no Google sign-in. All testers see and edit the same events. See "Switching to real accounts" to change this.
-- **Database.** Migrations `001`–`004` are needed. Also run `005_library_details.sql` for owner, rhythm, BPM, themes and the library pages, then `006_song_updated_at.sql` (required: the Library page won’t load without it).
+- **Database.** Migrations `001`–`004` are needed. Also run `005_library_details.sql` for owner, rhythm, BPM, themes and the library pages, then `006_song_updated_at.sql` and `007_song_url.sql` (required: the Library and song pages won’t load without them).
 - **Hosting.** Not deployed to Vercel yet. Run it locally with `npm run dev`.
 - **Branch.** The app is on `main` (merged from `revamp-nextjs` in pull request #1). The old single-file v2.4.0 page is gone from `main`, and since `002` removed its open access policies, it couldn't save anyway.
 
@@ -83,15 +83,16 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 ## Using the app
 
 - **Events** (`/dashboard`): lists events (name, date, song count, owner). Filter by **Owner** and **month**, and sort by event date with **Date ↑ / ↓** (newest first by default; undated events last). Each row has **Edit** (or click the title), **Share** (copies the read-only link) and **Delete**. **New event** creates an empty event and opens it.
-- **Editor:** **+ Add Song** opens a search. Type at least 3 letters of the title or any lyric line, then pick a song to import its lyrics, chords and key. **Add blank song** adds an empty one. You can also reorder and delete songs and song details, cycle colours, export a song as PNG (pick Lyrics Only, Lyrics + Chords or Section Notes). **Team** (under the event date) opens a pop-up to add, edit and remove team members, each with a free-text name and role. **Save** stores the event. **Share** copies the read-only link. The **Events**, **Library** and **Theme** links in the top bar go back to those pages. The browser warns before you leave with unsaved changes, including with the Back button.
-- **Song tabs:** **Lyrics Only** (large lyrics, no chords), **Lyrics + Chords** (chords above the words, instrumental bars as `| E . . . |`; **Edit** shows the ChordPro text), **Section Notes** (the song details).
-- **Paste a chord sheet:** after **Add blank song**, open **Lyrics + Chords** and paste a chord sheet copied from the web (chords on their own line above the lyrics). It's converted to ChordPro, and the song's empty title, key and Section Notes are filled in from it. **Undo** restores exactly what you pasted. ChordPro text and plain lyrics are pasted as they are. Some sites lose their chord alignment when copied; if chords land a few letters off, fix them with **Edit**.
+- **Editor:** **+ Add Song** opens a search. Type at least 3 letters of the title or any lyric line, then pick a song to import its lyrics, chords and key. **Add blank song** adds an empty one. **Autosave** stores your changes 1.5 seconds after you stop editing (the **Save** button still works). Each song also has a **Reference link** (YouTube, Spotify, ...). You can also reorder and delete songs and song details, cycle colours, export a song as PNG (pick Lyrics Only, Lyrics + Chords or Section Notes). **Team** (under the event date) opens a pop-up to add, edit and remove team members, each with a free-text name and role. **Save** stores the event. **Share** copies the read-only link. The **Events**, **Library** and **Theme** links in the top bar go back to those pages. The browser warns before you leave with unsaved changes, including with the Back button.
+- **Song tabs:** **Lyrics Only** (large lyrics, no chords) and **Lyrics + Chords** (chords above the words, instrumental bars as `| E . . . |`; **Edit** shows the ChordPro text). **Section Notes** (the song details) sit beside them on the right on tablet and PC and follow you as you scroll; on phones they fold into a **Section Notes** bar above the tabs. New songs start with no notes.
+- **Paste a chord sheet:** after **Add blank song**, open **Lyrics + Chords** and paste a chord sheet copied from the web (chords on their own line above the lyrics). It's converted to ChordPro, and the song's empty title, key, rhythm and BPM are filled in from it. **Undo** restores exactly what you pasted. ChordPro text and plain lyrics are pasted as they are. Some sites lose their chord alignment when copied; if chords land a few letters off, fix them with **Edit**.
 - **Key:** − and + move the song one semitone and rewrite its chords. On a share link they change only your view; **Reset** returns to the event's key.
 - **Sidebar:** **Events**, **Library** and **Theme** on the list pages. Inside an event, the same three links are in the top bar.
 - **Events:** each event can have an **Owner** (free text, under the date), shown on the list and on share links.
 - **Library:** all songs A–Z, with a filter by title, artist or lyrics and checkable theme chips (a song shows if it has any checked theme). Each row shows when the song was last updated. Open a song to view it, **Edit** its details and lyrics or chords, or **Delete** it (events keep their copy).
 - **Add songs** (Library): paste a chord sheet or upload files, check each preview card (title, artist, key, rhythm, BPM, themes) and **Confirm** it (or **Confirm all ready**), then **Save**. Only confirmed songs are saved; Save warns if some ready previews aren’t confirmed. Pasted text stays in the box until its card is confirmed, and **Preview** again updates the card. Rhythm defaults to 4/4 and BPM to empty; `Tempo:`, `BPM:` and `Time:` lines prefill them.
 - **Theme:** create, rename and delete themes. Deleting one removes it from every song.
+- **Metronome and Tap:** the round ▶ button next to the tempo fields clicks and flashes at the song's BPM; it keeps running when you change songs and follows each song's tempo (press it once per visit, since browsers only allow sound after a click). **Tap** next to BPM (in events and in the library song fields) sets the BPM from your taps.
 - **Rhythm and BPM in events:** imported songs bring their rhythm and BPM. Edit them next to the Key; share links show them as badges.
 - **Share link:** `/share/<token>` shows the event read-only to anyone with the link, without logging in, including the team list under **Team**. Old `/?share=<token>` links redirect there.
 
@@ -158,10 +159,12 @@ components/
   KeyControl.tsx              key - / + buttons and Reset
   SectionLayout.tsx           page layout with the sidebar
   SectionNav.tsx              Events / Library / Theme links
-  SectionNotes.tsx            the song details (Section Notes tab)
+  SectionNotes.tsx            the song details (Section Notes panel)
   SongFields.tsx              title, artist, key, rhythm, BPM and theme fields
-  SongTabs.tsx                Lyrics Only / Lyrics + Chords / Section Notes tabs
+  SongTabs.tsx                Lyrics Only / Lyrics + Chords tabs and the Section Notes panel
   TeamDialog.tsx              Team button + pop-up (edit and read-only)
+  Metronome.tsx               round ▶ beat button (audio + flash)
+  TapTempo.tsx                Tap button for BPM
   TempoControl.tsx            rhythm and BPM fields (badges on share links)
   ThemeToggle.tsx             light/dark switch
 lib/
@@ -176,7 +179,7 @@ lib/
   supabase/client.ts          browser client
   supabase/server.ts          server client (cookies)
 proxy.ts                      session refresh + login redirect
-supabase/migrations/          001_share_function.sql, 002_auth_and_rls.sql, 003_event_members.sql, 004_song_library.sql, 005_library_details.sql, 006_song_updated_at.sql
+supabase/migrations/          001_share_function.sql, 002_auth_and_rls.sql, 003_event_members.sql, 004_song_library.sql, 005_library_details.sql, 006_song_updated_at.sql, 007_song_url.sql
 .env.local.example            NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, SHARED_LOGIN_EMAIL
 ```
 
@@ -198,6 +201,7 @@ supabase/migrations/          001_share_function.sql, 002_auth_and_rls.sql, 003_
 - **Add Song search says "Could not find the function public.search_songs" or Upload fails on a missing `songs` table:** run `004_song_library.sql`.
 - **"… does not exist" or "… schema cache" errors that mention owner, rhythm, bpm, themes or song_themes:** run `005_library_details.sql`.
 - **"column songs.updated_at does not exist":** run `006_song_updated_at.sql`.
+- **"column songs.url does not exist":** run `007_song_url.sql`.
 - **A plain-text song uploads with chords in the wrong place:** the converter reads a line of only chords as chords for the line below, by column. Use spaces, not a proportional-font layout, or upload ChordPro.
 - **"Wrong password." on login:** the password doesn't match the shared account, or `SHARED_LOGIN_EMAIL` doesn't match its email.
 - **Dev console: "Encountered a script tag while rendering React component":** harmless. On 404 and error pages, Next re-renders the root layout in the browser during development, and React warns about the theme script, which already ran from the server HTML.

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import TapTempo from "./TapTempo";
 import { RHYTHM_PRESETS, parseBpm } from "@/lib/chordpro";
 
 type Props = {
@@ -62,6 +63,7 @@ export default function TempoControl({ rhythm, bpm, readOnly, onChange }: Props)
           aria-label="Beats per minute"
         />
       </label>
+      <TapTempo onBpm={(n) => onChange({ bpm: n })} />
     </div>
   );
 }

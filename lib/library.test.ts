@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { SAVED, byName, byTitle, draftFrom, draftStatus, isConfirmed, isReady, songMetaLine, toSongRow, validateFields, type Fields } from "./library.ts";
 
-const ok: Fields = { title: "Way Maker", artist: "Sinach", key: "E", rhythm: "4/4", bpm: "68", themeIds: [] };
+const ok: Fields = { title: "Way Maker", artist: "Sinach", key: "E", rhythm: "4/4", bpm: "68", url: "", themeIds: [] };
 
 test("validateFields accepts a complete song", () => {
   assert.equal(validateFields(ok), null);
@@ -23,6 +23,7 @@ test("toSongRow trims fields, empties to null and builds search text", () => {
     song_key: "E",
     rhythm: null,
     bpm: null,
+    url: null,
     content: "[E]Way maker",
     search_text: "way maker way maker",
   });
@@ -84,4 +85,11 @@ test("a ready draft must be confirmed before it is saved", () => {
   assert.ok(!isReady(c));
   assert.equal(draftStatus({ ...c, fields: { ...c.fields, title: "" } }).text, "Needs a title");
   assert.equal(draftStatus({ ...c, result: SAVED }).text, SAVED);
+});
+
+test("reference link: http(s) only, empty is fine", () => {
+  assert.equal(validateFields({ ...ok, url: "https://youtu.be/x" }), null);
+  assert.equal(validateFields({ ...ok, url: "javascript:alert(1)" }), "Link must start with http:// or https://.");
+  assert.equal(toSongRow({ ...ok, url: " https://open.spotify.com/x " }, "").url, "https://open.spotify.com/x");
+  assert.equal(toSongRow(ok, "").url, null);
 });

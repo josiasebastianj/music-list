@@ -6,6 +6,7 @@ import AddSongDialog from "./AddSongDialog";
 import AppShell from "./AppShell";
 import Icon from "./Icon";
 import KeyControl from "./KeyControl";
+import Metronome from "./Metronome";
 import SectionNav from "./SectionNav";
 import SongTabs from "./SongTabs";
 import TeamDialog from "./TeamDialog";
@@ -54,6 +55,14 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
   }, [dirty]);
 
   useEffect(() => {
+    // autosave 1.5s after the last edit; after a failed save it waits for the next edit instead of retrying in a loop
+    if (readOnly || !eventId || !dirty || saving === "saving" || error) return;
+    const t = setTimeout(save, 1500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- save() is recreated every render; `event` is what changes
+  }, [event, dirty, saving, error]);
+
+  useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 2200);
     return () => clearTimeout(t);
@@ -84,6 +93,7 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
 
   function update(next: SetlistEvent) {
     revision.current++;
+    setError(null);
     setEvent(next);
     setDirty(true);
   }
@@ -288,11 +298,13 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
                       <>
                         <KeyControl value={displayKey} readOnly onStep={stepView} onReset={displayKey !== song.baseKey ? resetView : undefined} />
                         <TempoControl key={song.id} rhythm={song.rhythm} bpm={song.bpm} readOnly onChange={() => {}} />
+                        <Metronome bpm={song.bpm} />
                       </>
                     ) : (
                       <>
                         <KeyControl value={song.baseKey} readOnly={false} onStep={stepKey} onType={(v) => updateSong(song.id, (s) => ({ ...s, baseKey: v }))} />
                         <TempoControl key={song.id} rhythm={song.rhythm} bpm={song.bpm} readOnly={false} onChange={(patch) => updateSong(song.id, (s) => ({ ...s, ...patch }))} />
+                        <Metronome bpm={song.bpm} />
                         <button className="icon-btn" type="button" title="Move song up" aria-label="Move song up" disabled={index === 0} onClick={() => moveSong(-1)}><Icon name="up" /></button>
                         <button className="icon-btn" type="button" title="Move song down" aria-label="Move song down" disabled={index === event.songs.length - 1} onClick={() => moveSong(1)}><Icon name="down" /></button>
                         <button className="icon-btn danger" type="button" title="Delete song" aria-label="Delete song" onClick={deleteSong}><Icon name="trash" /></button>
@@ -301,6 +313,18 @@ export default function EventEditor({ initial, eventId, shareToken = null, readO
                     <ExportDialog hasLyrics={displayContent.trim() !== ""} onPick={exportPng} />
                   </div>
                 </div>
+                {readOnly ? (
+                  song.url && <a className="song-url" href={song.url} target="_blank" rel="noopener noreferrer">{song.url}</a>
+                ) : (
+                  <input
+                    className="song-url"
+                    type="url"
+                    value={song.url}
+                    onChange={(e) => updateSong(song.id, (s) => ({ ...s, url: e.target.value }))}
+                    placeholder="Reference link (YouTube, Spotify, ...)"
+                    aria-label="Reference link"
+                  />
+                )}
               </div>
 
               <SongTabs
