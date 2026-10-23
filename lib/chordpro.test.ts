@@ -12,6 +12,7 @@ import {
   normalizeSearch,
   parseChordPro,
   searchText,
+  bpmFromTaps,
   sectionLabels,
   songMeta,
   transpose,
@@ -257,4 +258,11 @@ test("fromChordsAboveLyrics turns Tempo/BPM/Time lines into directives", () => {
   assert.equal(fromChordsAboveLyrics("Song\nKey: G\nTempo: 72\nTime: 3 / 4\nG\nHello", "f"), "{title: Song}\n{key: G}\n{time: 3/4}\n{tempo: 72}\n[G]Hello");
   assert.equal(fromChordsAboveLyrics("Song\nBPM = 120\nG\nHello", "f"), "{title: Song}\n{tempo: 120}\n[G]Hello");
   assert.deepEqual(songMeta(fromChordsAboveLyrics("Song\nTempo: 72\nTime: 6/8\nG\nHi", "f")), { rhythm: "6/8", bpm: 72 });
+});
+
+test("bpmFromTaps averages the gaps and clamps to 20-300", () => {
+  assert.equal(bpmFromTaps([0]), null);
+  assert.equal(bpmFromTaps([0, 500, 1000, 1500]), 120);
+  assert.equal(bpmFromTaps([0, 10]), 300);
+  assert.equal(bpmFromTaps([0, 10000]), 20);
 });

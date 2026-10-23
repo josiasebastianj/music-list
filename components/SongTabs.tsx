@@ -7,27 +7,26 @@ import { convertPastedChords, lyricLines, parseChordPro } from "@/lib/chordpro";
 import type { Section, Song } from "@/lib/event";
 import { fillFromContent } from "@/lib/songContent";
 
-type Tab = "lyrics" | "chords" | "notes";
+type Tab = "lyrics" | "chords";
 type Props = {
   song: Song;
   content: string; // what to show: song.content, or a view-only transposition on share links
   readOnly: boolean;
   onContentChange: (content: string) => void;
   onSectionsChange: (sections: Section[]) => void;
-  onSongChange: (song: Song) => void; // a converted paste may also fill in title, key and Section Notes
+  onSongChange: (song: Song) => void; // a converted paste may also fill in title, key, rhythm and BPM
 };
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "lyrics", label: "Lyrics Only" },
   { id: "chords", label: "Lyrics + Chords" },
-  { id: "notes", label: "Section Notes" },
 ];
 const TAB_KEY = "setlistApp_songTab";
 
 function readTab(): Tab | null {
   try {
     const v = localStorage.getItem(TAB_KEY);
-    return v === "lyrics" || v === "chords" || v === "notes" ? v : null;
+    return v === "lyrics" || v === "chords" ? v : null;
   } catch {
     return null;
   }
@@ -42,11 +41,12 @@ export default function SongTabs({ song, content, readOnly, onContentChange, onS
   const stored = useSyncExternalStore(subscribe, readTab, () => null);
   const [picked, setPicked] = useState<Tab | null>(null);
   const [editing, setEditing] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false); // phone only: notes fold into a bar above the tabs
   // after a converted paste: the song as it was, plus the content a plain paste would have given
   const [undo, setUndo] = useState<{ before: Song; raw: string } | null>(null);
   const parsed = useMemo(() => parseChordPro(content), [content]);
   const hasLyrics = content.trim() !== "";
-  const tab: Tab = picked ?? (hasLyrics ? (stored ?? "chords") : "notes");
+  const tab: Tab = picked ?? (hasLyrics ? (stored ?? "chords") : "chords");
   const showEditor = !readOnly && (editing || !hasLyrics); // empty songs open straight into the editor
   const showUndo = undo !== null && undo.before.id === song.id;
 
@@ -87,7 +87,8 @@ export default function SongTabs({ song, content, readOnly, onContentChange, onS
   );
 
   return (
-    <div className="main-content">
+    <div className="main-content song-body">
+      <div className="song-pane">
       <div className="song-tabs" role="tablist" aria-label="Song views">
         {TABS.map((t) => (
           <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className={`song-tab${tab === t.id ? " active" : ""}`} onClick={() => choose(t.id)}>
@@ -95,8 +96,6 @@ export default function SongTabs({ song, content, readOnly, onContentChange, onS
           </button>
         ))}
       </div>
-
-      {tab === "notes" && <SectionNotes sections={song.sections} readOnly={readOnly} onChange={onSectionsChange} />}
 
       {tab === "lyrics" &&
         (hasLyrics
@@ -147,6 +146,16 @@ export default function SongTabs({ song, content, readOnly, onContentChange, onS
             empty
           )}
         </>
+      )}
+      </div>
+
+      {(!readOnly || song.sections.length > 0) && (
+        <aside className={`notes-pane${notesOpen ? " open" : ""}`} aria-label="Section Notes">
+          <button className="notes-title" type="button" aria-expanded={notesOpen} onClick={() => setNotesOpen(!notesOpen)}>
+            Section Notes{song.sections.length > 0 && ` (${song.sections.length})`}
+          </button>
+          <SectionNotes sections={song.sections} readOnly={readOnly} onChange={onSectionsChange} />
+        </aside>
       )}
     </div>
   );

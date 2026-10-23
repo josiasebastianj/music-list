@@ -1,9 +1,9 @@
-export const APP_VERSION = "3.4.0";
+export const APP_VERSION = "3.5.0";
 
 export const colors = ["#8fc5ff", "#93dfb2", "#ffd37d", "#8edbe8", "#f3a5c6", "#f5c58a", "#c5a5f5", "#b6a9f5", "#9cdda9"];
 
 export type Section = { id: string; name: string; color: string; note: string };
-export type Song = { id: string; title: string; baseKey: string; rhythm: string; bpm: number | null; content: string; librarySongId?: string; sections: Section[] };
+export type Song = { id: string; title: string; baseKey: string; rhythm: string; bpm: number | null; url: string; content: string; librarySongId?: string; sections: Section[] };
 export type Member = { name: string; role: string };
 export type SetlistEvent = { eventName: string; eventDate: string; owner: string; songs: Song[]; members: Member[] };
 export type EventRow = { event_name: string | null; event_date: string | null; owner?: string | null; data: unknown; members?: unknown };
@@ -12,6 +12,12 @@ type Loose = { [key: string]: unknown } | null | undefined;
 const str = (value: unknown) => (typeof value === "string" ? value : "");
 const list = (value: unknown): Loose[] => (Array.isArray(value) ? value : []);
 const cleanBpm = (value: unknown) => (typeof value === "number" && Number.isInteger(value) && value >= 20 && value <= 300 ? value : null);
+
+// Only http(s) links: the url ends up in an href.
+export const cleanUrl = (value: unknown) => {
+  const url = str(value).trim();
+  return /^https?:\/\/\S+$/i.test(url) ? url : "";
+};
 
 export function uid(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -39,6 +45,7 @@ function normalizeSong(song: Loose): Song {
     baseKey: str(song?.baseKey),
     rhythm: str(song?.rhythm).slice(0, 12),
     bpm: cleanBpm(song?.bpm),
+    url: cleanUrl(song?.url),
     content: str(song?.content),
     ...(librarySongId ? { librarySongId } : {}),
     sections: normalizeSections(song?.sections),
@@ -97,6 +104,7 @@ export function randomShareToken() {
 // Errors caused by migration 005 not having been run get a pointer to the fix.
 export function migrationHint(message: string): string {
   if (!/(does not exist|schema cache|could not find)/i.test(message)) return message;
+  if (/songs\.url|'url' column/i.test(message)) return `${message} — run supabase/migrations/007_song_url.sql in the Supabase SQL Editor.`;
   if (/songs\.updated_at/i.test(message)) return `${message} — run supabase/migrations/006_song_updated_at.sql in the Supabase SQL Editor.`;
   return /(owner|rhythm|bpm|themes|song_themes)/i.test(message)
     ? `${message} — run supabase/migrations/005_library_details.sql in the Supabase SQL Editor.`

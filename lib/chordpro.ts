@@ -365,3 +365,11 @@ export function songMeta(text: string): { rhythm: string; bpm: number | null } {
   }
   return { rhythm, bpm };
 }
+
+// Tap tempo: timestamps (ms) of the last taps → BPM from the average gap of up to the last 6 taps; null until 2 taps.
+export function bpmFromTaps(times: number[]): number | null {
+  const t = times.slice(-6);
+  if (t.length < 2) return null;
+  const n = Math.round(60000 / ((t[t.length - 1] - t[0]) / (t.length - 1)));
+  return Math.min(300, Math.max(20, n));
+}

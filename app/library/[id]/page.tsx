@@ -13,7 +13,7 @@ export default async function LibrarySongPage({ params }: { params: Promise<{ id
   if (!user) redirect("/login");
 
   const [songRes, themesRes] = await Promise.all([
-    supabase.from("songs").select("id,title,artist,song_key,rhythm,bpm,content,search_text,themes(id,name)").eq("id", id).maybeSingle(),
+    supabase.from("songs").select("id,title,artist,song_key,rhythm,bpm,url,content,search_text,themes(id,name)").eq("id", id).maybeSingle(),
     supabase.from("themes").select("id,name"),
   ]);
   // 22P02 = the id isn't a valid uuid: treat it like any unknown song

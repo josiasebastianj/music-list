@@ -3,11 +3,10 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Icon from "./Icon";
 import { lyricLines, normalizeSearch, parseChordPro } from "@/lib/chordpro";
-import { uid, type Song } from "@/lib/event";
-import { sectionNotesFrom } from "@/lib/songContent";
+import { cleanUrl, uid, type Song } from "@/lib/event";
 import { createClient } from "@/lib/supabase/client";
 
-type Result = { id: string; title: string; artist: string | null; song_key: string; rhythm?: string | null; bpm?: number | null; content: string };
+type Result = { id: string; title: string; artist: string | null; song_key: string; rhythm?: string | null; bpm?: number | null; url?: string | null; content: string };
 
 function songFromLibrary(r: Result): Song {
   return {
@@ -16,9 +15,10 @@ function songFromLibrary(r: Result): Song {
     baseKey: r.song_key,
     rhythm: r.rhythm ?? "",
     bpm: r.bpm ?? null,
+    url: cleanUrl(r.url),
     content: r.content,
     librarySongId: r.id,
-    sections: sectionNotesFrom(r.content),
+    sections: [],
   };
 }
 
@@ -118,7 +118,7 @@ export default function AddSongDialog({ onAdd }: { onAdd: (song: Song) => void }
           <div className="share-dialog-actions">
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- full page load so the editor's beforeunload guard protects unsaved edits */}
             <a className="btn" href="/library/new">Add to library</a>
-            <button className="btn" type="button" onClick={() => pick({ id: uid("song"), title: "", baseKey: "", rhythm: "", bpm: null, content: "", sections: [] })}>
+            <button className="btn" type="button" onClick={() => pick({ id: uid("song"), title: "", baseKey: "", rhythm: "", bpm: null, url: "", content: "", sections: [] })}>
               Add blank song
             </button>
             <button className="btn" type="button" onClick={close}>Cancel</button>

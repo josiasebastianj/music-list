@@ -1,5 +1,6 @@
 "use client";
 
+import TapTempo from "./TapTempo";
 import { RHYTHM_PRESETS } from "@/lib/chordpro";
 import type { Fields, Theme } from "@/lib/library";
 
@@ -40,9 +41,16 @@ export default function SongFields({ idPrefix, value, themes, disabled = false, 
           ))}
         </datalist>
       </label>
-      <label className="field">
-        BPM
-        <input type="number" inputMode="numeric" min={20} max={300} step={1} value={value.bpm} onChange={(e) => onChange({ bpm: e.target.value })} disabled={disabled} placeholder="72" />
+      <div className="field">
+        <span>BPM</span>
+        <div className="bpm-row">
+          <input type="number" inputMode="numeric" min={20} max={300} step={1} value={value.bpm} onChange={(e) => onChange({ bpm: e.target.value })} disabled={disabled} placeholder="72" aria-label="BPM" />
+          <TapTempo disabled={disabled} onBpm={(n) => onChange({ bpm: String(n) })} />
+        </div>
+      </div>
+      <label className="field field-wide">
+        Reference link
+        <input type="url" value={value.url} onChange={(e) => onChange({ url: e.target.value })} disabled={disabled} placeholder="https://youtube.com/..." />
       </label>
       {themes.length > 0 ? (
         <fieldset className="field field-wide theme-picker" disabled={disabled}>

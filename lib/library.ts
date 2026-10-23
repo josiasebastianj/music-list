@@ -1,3 +1,4 @@
+import { cleanUrl } from "./event.ts";
 import { fromChordsAboveLyrics, guessKey, isChordProText, keyStep, parseBpm, parseChordPro, searchText, songMeta } from "./chordpro.ts";
 
 export type Theme = { id: string; name: string };
@@ -11,6 +12,7 @@ export type LibrarySong = {
   song_key: string;
   rhythm: string | null;
   bpm: number | null;
+  url: string | null; // from migration 007
   content: string;
   search_text: string;
   themes: Theme[];
@@ -23,7 +25,7 @@ export function songMetaLine(s: Pick<LibrarySong, "artist" | "song_key" | "rhyth
   return [s.artist, s.song_key && `Key ${s.song_key}`, s.rhythm, s.bpm != null && `${s.bpm} BPM`].filter(Boolean).join(" · ");
 }
 
-export type Fields = { title: string; artist: string; key: string; rhythm: string; bpm: string; themeIds: string[] };
+export type Fields = { title: string; artist: string; key: string; rhythm: string; bpm: string; url: string; themeIds: string[] };
 
 export function fieldsFrom(s: LibrarySong): Fields {
   return {
@@ -32,6 +34,7 @@ export function fieldsFrom(s: LibrarySong): Fields {
     key: s.song_key,
     rhythm: s.rhythm ?? "",
     bpm: s.bpm == null ? "" : String(s.bpm),
+    url: s.url ?? "",
     themeIds: s.themes.map((t) => t.id),
   };
 }
@@ -41,6 +44,7 @@ export function validateFields(f: Fields): string | null {
   if (keyStep(f.key, 0) === null) return "Enter a key like G, Bb or F#m.";
   if (f.bpm.trim() && parseBpm(f.bpm) === null) return "BPM must be a whole number from 20 to 300.";
   if (f.rhythm.trim().length > 12) return "Rhythm is too long (12 characters max).";
+  if (f.url.trim() && !cleanUrl(f.url)) return "Link must start with http:// or https://.";
   return null;
 }
 
@@ -52,6 +56,7 @@ export function toSongRow(f: Fields, content: string) {
     song_key: f.key.trim(),
     rhythm: f.rhythm.trim() || null,
     bpm: parseBpm(f.bpm),
+    url: cleanUrl(f.url) || null,
     content,
     search_text: searchText(title, content),
   };
@@ -89,6 +94,7 @@ export function draftFrom(label: string, raw: string, fallbackTitle: string): Dr
       key: parsed.key || guessKey(parsed) || "",
       rhythm: meta.rhythm || "4/4",
       bpm: meta.bpm === null ? "" : String(meta.bpm),
+      url: "",
       themeIds: [],
     },
     keyConfirmed: parsed.key !== "",

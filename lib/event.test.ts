@@ -55,7 +55,7 @@ test("eventFromRow reads team members and cleans bad entries", () => {
 });
 
 test("eventFromRow keeps valid data unchanged", () => {
-  const songs = [{ id: "song-1", title: "Way Maker", baseKey: "E", rhythm: "3/4", bpm: 72, content: "[E]Way maker", librarySongId: "lib-1", sections: [{ id: "section-1", name: "Intro", color: "#93dfb2", note: "Soft\nkeys" }] }];
+  const songs = [{ id: "song-1", title: "Way Maker", baseKey: "E", rhythm: "3/4", bpm: 72, url: "https://youtu.be/x", content: "[E]Way maker", librarySongId: "lib-1", sections: [{ id: "section-1", name: "Intro", color: "#93dfb2", note: "Soft\nkeys" }] }];
   assert.deepEqual(eventFromRow({ event_name: "A", event_date: "2026-10-04", data: { songs } }).songs, songs);
 });
 
