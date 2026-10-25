@@ -1,4 +1,5 @@
 import type { ParsedSong } from "@/lib/chordpro";
+import ChordTrigger from "./chords/ChordTrigger";
 
 const NBSP = " ";
 
@@ -15,7 +16,7 @@ export default function ChordSheet({ parsed }: { parsed: ParsedSong }) {
               <div key={j} className="chord-line">
                 {line.segments.map((g, k) => (
                   <span key={k} className="chord-seg">
-                    <span className="chord">{g.chord ?? NBSP}</span>
+                    {g.chord ? <ChordTrigger token={g.chord} /> : <span className="chord">{NBSP}</span>}
                     <span className="chord-text">{g.text || NBSP}</span>
                   </span>
                 ))}
