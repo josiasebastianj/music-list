@@ -1,6 +1,6 @@
 # MDCHORD
 
-**Version:** 3.6.0
+**Version:** 3.7.0
 
 MDCHORD (*One Church. One Sound. One Jesus.*) builds worship setlists. An Event holds Songs, and each Song holds Song Details (a name, a colour and a note). You can export a song as a PNG (pick Lyrics Only, Lyrics + Chords or Section Notes) and share a read-only link to an event. A dashboard lists your events.
 
@@ -85,7 +85,7 @@ It is a Next.js (TypeScript) app. Supabase provides the database and sign-in.
 - **Events** (`/dashboard`): lists events (name, date, song count, owner). Filter by **Owner** and **month**, and sort by event date with **Date ↑ / ↓** (newest first by default; undated events last). Each row has **Edit** (or click the title), **Share** (copies the read-only link) and **Delete**. **New event** creates an empty event and opens it.
 - **Editor:** **+ Add Song** opens a search. Type at least 3 letters of the title or any lyric line, then pick a song to import its lyrics, chords and key. **Add blank song** adds an empty one. **Autosave** stores your changes 1.5 seconds after you stop editing (the **Save** button still works). Each song also has a **Reference link** (YouTube, Spotify, ...). You can also reorder and delete songs and song details, cycle colours, export a song as PNG (pick Lyrics Only, Lyrics + Chords or Section Notes). **Team** (under the event date) opens a pop-up to add, edit and remove team members, each with a free-text name and role. **Save** stores the event. **Share** copies the read-only link. The **Events**, **Library** and **Theme** links in the top bar go back to those pages. The browser warns before you leave with unsaved changes, including with the Back button.
 - **Song tabs:** **Lyrics Only** (large lyrics, no chords) and **Lyrics + Chords** (chords above the words, instrumental bars as `| E . . . |`; **Edit** shows the ChordPro text). **Section Notes** (the song details) sit beside them on the right on tablet and PC and follow you as you scroll; on phones they fold into a **Section Notes** bar above the tabs. New songs start with no notes.
-- **Chord diagrams:** in **Lyrics + Chords**, hover a chord (or tap it on a phone or tablet) to see it drawn on a piano keyboard. Each chord offers 2–4 voicings — Root position, the inversions, and for slash chords a **Bass note lowest** shape — and the keyboard changes when you pick another. Hovering shows it briefly; clicking or tapping keeps it until you dismiss it. Nothing is saved, and Export PNG is unchanged.
+- **Chord diagrams:** in **Lyrics + Chords**, hover a chord (or tap it on a phone or tablet) to see how to play it. A **Keyboard | Guitar** switch picks the instrument (remembered in your browser). Keyboard offers 2–4 voicings — Root position, the inversions, and for slash chords a **Bass note lowest** shape. Guitar offers up to 3 shapes — **Open**, **E shape** and **A shape** barres — drawn on a fretboard with a tab line such as `x32010`; slash chords put the bass note lowest. Hovering shows it briefly; clicking or tapping keeps it until you dismiss it (Esc also closes it). Nothing is saved, and Export PNG is unchanged.
 - **Paste a chord sheet:** after **Add blank song**, open **Lyrics + Chords** and paste a chord sheet copied from the web (chords on their own line above the lyrics). It's converted to ChordPro, and the song's empty title, key, rhythm and BPM are filled in from it. **Undo** restores exactly what you pasted. ChordPro text and plain lyrics are pasted as they are. Some sites lose their chord alignment when copied; if chords land a few letters off, fix them with **Edit**.
 - **Key:** − and + move the song one semitone and rewrite its chords. On a share link they change only your view; **Reset** returns to the event's key.
 - **Sidebar:** **Events**, **Library** and **Theme** on the list pages. Inside an event, the same three links are in the top bar.
@@ -175,6 +175,8 @@ lib/
   chords/parse.test.ts        runnable check: node --test
   chords/voicings.ts          inversions and bass-first voicings, fitted to C4-C6
   chords/voicings.test.ts     runnable check: node --test
+  chords/guitar.ts            guitar shapes (open, E-form, A-form barres, slash re-bass), tabString
+  chords/guitar.test.ts       runnable check: node --test
   event.ts                    types (Event, Song, Section, Member), eventFromRow, safeColor, colors, formatEventDate, randomShareToken
   event.test.ts               runnable check: node --test
   exportPng.ts                PNG export
