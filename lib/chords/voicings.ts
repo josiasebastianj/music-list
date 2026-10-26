@@ -1,5 +1,5 @@
 import type { ChordSymbol } from "./parse.ts";
-import { spellTone } from "./parse.ts";
+import { noteName, spellTone } from "./parse.ts";
 
 export const LOW = 60; // C4
 export const HIGH = 84; // C6 — one key past B5 so a stacked 9th still fits
@@ -74,7 +74,8 @@ export function voicingNames(chord: ChordSymbol, v: Voicing): string[] {
   return v.keys.map((key) => {
     const pc = mod12(key);
     const idx = chord.pitchClasses.indexOf(pc);
-    if (idx === -1) return String(pc); // unreachable for built voicings
+    // Only a slash chord's bass can sit outside the chord tones.
+    if (idx === -1) return chord.bassLetter && pc === chord.bass ? spellTone(chord.bassLetter, 1, pc) : noteName(pc, chord.flats);
     return spellTone(chord.rootLetter, chord.degrees[idx], pc);
   });
 }

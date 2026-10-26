@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import PianoDiagram from "./PianoDiagram";
 import { parseChord } from "@/lib/chords/parse";
@@ -25,11 +25,12 @@ type Props = {
   token: string;
   anchor: DOMRect;
   onClose: () => void;
+  focusOnOpen?: boolean;
   onPointerEnter?: () => void;
   onPointerLeave?: () => void;
 };
 
-export default function ChordVisualizer({ token, anchor, onClose, onPointerEnter, onPointerLeave }: Props) {
+export default function ChordVisualizer({ token, anchor, onClose, focusOnOpen, onPointerEnter, onPointerLeave }: Props) {
   const chord = parseChord(token);
   const vs = chord ? voicings(chord) : [];
   // Keyed by token: a selection belongs to one chord, so a new chord starts at 0
@@ -51,6 +52,11 @@ export default function ChordVisualizer({ token, anchor, onClose, onPointerEnter
     );
     setPos({ left: next.left, top: next.top });
   }, [anchor, token, pick]);
+
+  const placed = pos !== null;
+  useEffect(() => {
+    if (focusOnOpen && placed) panelRef.current?.querySelector("button")?.focus();
+  }, [focusOnOpen, placed]);
 
   if (!chord || vs.length === 0) return null;
   const v = vs[Math.min(pick, vs.length - 1)];

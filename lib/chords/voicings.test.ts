@@ -89,3 +89,13 @@ test("every inversion is a different set of pitch classes only by ordering, neve
   const sets = voicings(c).map((v) => [...new Set(v.keys.map((k) => k % 12))].sort((a, b) => a - b).join(","));
   assert.equal(new Set(sets).size, 1, "all voicings must contain the same pitch classes");
 });
+
+test("a slash chord's bass outside the chord is spelled, not numbered", () => {
+  const spell = (t: string) => {
+    const c = parseChord(t)!;
+    return voicingNames(c, voicings(c)[0]);
+  };
+  assert.deepEqual(spell("C/D"), ["D", "E", "G", "C"]);
+  assert.deepEqual(spell("C/Bb"), ["Bb", "C", "E", "G"]);
+  assert.deepEqual(spell("G/A"), ["A", "B", "D", "G"]);
+});

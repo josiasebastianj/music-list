@@ -1,13 +1,26 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import ChordVisualizer from "./ChordVisualizer";
 import { parseChord } from "@/lib/chords/parse";
 
 const HOVER_DELAY = 120;
 
+// One shared MediaQueryList for every chord; false on the server so first paint matches.
+let hoverMq: MediaQueryList | null = null;
+const mq = () => (hoverMq ??= window.matchMedia("(hover: hover) and (pointer: fine)"));
+const subscribeHover = (cb: () => void) => {
+  mq().addEventListener("change", cb);
+  return () => mq().removeEventListener("change", cb);
+};
+const useCanHover = () => useSyncExternalStore(subscribeHover, () => mq().matches, () => false);
+
+// Only one chord panel may be open; opening another closes this one.
+let closeActive: (() => void) | null = null;
+
 export default function ChordTrigger({ token }: { token: string }) {
-  const [canHover, setCanHover] = useState(false);
+  const canHover = useCanHover();
+  const [focusPanel, setFocusPanel] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [pinned, setPinned] = useState(false);
   const [anchor, setAnchor] = useState<DOMRect | null>(null);
@@ -16,15 +29,6 @@ export default function ChordTrigger({ token }: { token: string }) {
 
   const parsed = parseChord(token);
   const open = (pinned || hovered) && anchor !== null;
-
-  // Read the media query in an effect so the first paint is identical on server and client.
-  useEffect(() => {
-    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
-    const sync = () => setCanHover(mq.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  }, []);
 
   const clearTimer = () => {
     if (hoverTimer.current) {
@@ -42,13 +46,20 @@ export default function ChordTrigger({ token }: { token: string }) {
     clearTimer();
     setPinned(false);
     setHovered(false);
+    setFocusPanel(false);
   }, []);
 
   // Close on Escape or on a pointerdown outside both the trigger and the panel.
   useEffect(() => {
     if (!open) return;
+    if (closeActive && closeActive !== close) closeActive();
+    closeActive = close;
+    // The panel is position:fixed at a captured rect, so it would drift from its chord.
+    const onMove = () => close();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
+      if (e.key !== "Escape") return;
+      if (document.activeElement?.closest?.(".chord-panel")) btnRef.current?.focus();
+      close();
     };
     const onDown = (e: PointerEvent) => {
       const t = e.target as Node | null;
@@ -60,7 +71,12 @@ export default function ChordTrigger({ token }: { token: string }) {
     };
     window.addEventListener("keydown", onKey);
     document.addEventListener("pointerdown", onDown);
+    window.addEventListener("scroll", onMove, true);
+    window.addEventListener("resize", onMove);
     return () => {
+      if (closeActive === close) closeActive = null;
+      window.removeEventListener("scroll", onMove, true);
+      window.removeEventListener("resize", onMove);
       window.removeEventListener("keydown", onKey);
       document.removeEventListener("pointerdown", onDown);
     };
@@ -103,13 +119,15 @@ export default function ChordTrigger({ token }: { token: string }) {
             : undefined
         }
         onFocus={canHover ? () => { capture(); setHovered(true); } : undefined}
-        onBlur={canHover ? () => setHovered(false) : undefined}
-        onClick={() => {
+        onBlur={canHover ? (e) => { if (!(e.relatedTarget as Element | null)?.closest?.(".chord-panel")) setHovered(false); } : undefined}
+        onClick={(e) => {
           const next = !pinned;
           clearTimer();
           setHovered(false);
           if (next) capture();
           setPinned(next);
+          // detail 0 = keyboard activation: the panel is portaled away, so move focus into it
+          setFocusPanel(next && e.detail === 0);
         }}
       >
         {token}
@@ -120,6 +138,7 @@ export default function ChordTrigger({ token }: { token: string }) {
           token={token}
           anchor={anchor}
           onClose={close}
+          focusOnOpen={focusPanel}
           onPointerEnter={
             canHover
               ? () => {

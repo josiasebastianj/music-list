@@ -3,6 +3,7 @@ export type ChordSymbol = {
   root: number;
   rootLetter: string; // the letter the root is written on: "B" for Bb, "F" for F#
   bass: number | null;
+  bassLetter: string | null;
   intervals: number[];
   degrees: number[];
   flats: boolean;
@@ -40,7 +41,16 @@ const QUALITY: Record<string, Tone[]> = {
   "11": [[0, 1], [4, 3], [7, 5], [10, 7], [14, 9], [17, 11]], m11: [[0, 1], [3, 3], [7, 5], [10, 7], [14, 9], [17, 11]],
   "13": [[0, 1], [4, 3], [7, 5], [10, 7], [14, 9], [21, 13]], m13: [[0, 1], [3, 3], [7, 5], [10, 7], [14, 9], [21, 13]],
   maj13: [[0, 1], [4, 3], [7, 5], [11, 7], [14, 9], [21, 13]], M13: [[0, 1], [4, 3], [7, 5], [11, 7], [14, 9], [21, 13]],
+  add2: [[0, 1], [2, 2], [4, 3], [7, 5]], add4: [[0, 1], [4, 3], [5, 4], [7, 5]],
+  "7b9": [[0, 1], [4, 3], [7, 5], [10, 7], [13, 9]], "7#9": [[0, 1], [4, 3], [7, 5], [10, 7], [15, 9]],
+  "7#5": [[0, 1], [4, 3], [8, 5], [10, 7]], "9sus4": [[0, 1], [5, 4], [7, 5], [10, 7], [14, 9]],
+  "6/9": [[0, 1], [4, 3], [7, 5], [9, 6], [14, 9]],
 };
+// Spellings the song-sheet regex accepts for chords already in the table.
+const ALIAS: Record<string, string> = {
+  min7: "m7", Maj7: "maj7", Maj9: "maj9", "m(maj7)": "mMaj7", "+": "aug", aug7: "7#5", "+7": "7#5", "°": "dim", "°7": "dim7", ø: "m7b5",
+};
+for (const [from, to] of Object.entries(ALIAS)) QUALITY[from] = QUALITY[to];
 
 const LETTERS = ["C", "D", "E", "F", "G", "A", "B"];
 const LETTER_PC: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
@@ -48,23 +58,26 @@ const LETTER_PC: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, 
 const mod12 = (n: number) => ((n % 12) + 12) % 12;
 
 export function parseChord(token: string): ChordSymbol | null {
-  const m = /^([A-G](?:#|b)?)([^/]*)(?:\/([A-G](?:#|b)?))?$/.exec(token.trim());
+  const m = /^([A-G](?:#|b)?)(6\/9|[^/]*)(?:\/([A-G](?:#|b)?))?$/.exec(token.trim());
   if (!m) return null;
   const root = ROOT_PC[m[1]];
   if (root === undefined) return null;
   const quality = QUALITY[m[2]];
   if (quality === undefined) return null;
   let bass: number | null = null;
+  let bassLetter: string | null = null;
   if (m[3] !== undefined) {
     const b = ROOT_PC[m[3]];
     if (b === undefined) return null;
     bass = b;
+    bassLetter = m[3][0];
   }
   return {
     text: token.trim(),
     root,
     rootLetter: m[1][0],
     bass,
+    bassLetter,
     intervals: quality.map(([s]) => s),
     degrees: quality.map(([, d]) => d),
     flats: m[1].includes("b"),

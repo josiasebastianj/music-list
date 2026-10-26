@@ -82,3 +82,14 @@ test("noteName spells sharps or flats", () => {
   assert.equal(noteName(1, true), "Db");
   assert.equal(noteName(10, true), "Bb");
 });
+
+test("sheet spellings and extra qualities parse", () => {
+  assert.deepEqual(parseChord("Cmin7")!.intervals, [0, 3, 7, 10]);
+  assert.deepEqual(parseChord("C+")!.intervals, [0, 4, 8]);
+  assert.deepEqual(parseChord("C°")!.intervals, [0, 3, 6]);
+  assert.deepEqual(parseChord("C7b9")!.intervals, [0, 4, 7, 10, 13]);
+  assert.deepEqual(parseChord("C6/9")!.intervals, [0, 4, 7, 9, 14]);
+  assert.equal(parseChord("C6/9")!.bass, null);
+  assert.equal(parseChord("C6/E")!.bass, 4);
+  assert.deepEqual(spelled("C7b9"), ["C", "E", "G", "Bb", "Db"]);
+});
