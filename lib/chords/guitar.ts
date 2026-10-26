@@ -73,7 +73,7 @@ export function guitarVoicings(chord: ChordSymbol): Fingering[] {
       const moved = withBass(frets, chord.bass);
       if (!moved || moved.filter((f) => f >= 0).length < 3) return;
       frets = moved;
-      name += ` + ${chord.text.split("/")[1]} bass`;
+      name += ` /${chord.text.split("/")[1]}`;
     }
     if (!out.some((o) => o.frets.join() === frets.join())) out.push({ name, frets });
   };

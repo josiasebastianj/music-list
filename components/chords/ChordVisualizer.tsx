@@ -7,22 +7,8 @@ import GuitarDiagram from "./GuitarDiagram";
 import { setInstrument, useInstrument } from "./instrument";
 import { guitarVoicings, tabString, type Fingering } from "@/lib/chords/guitar";
 import { parseChord } from "@/lib/chords/parse";
+import { placePanel } from "@/lib/chords/place";
 import { voicings, voicingNames, type Voicing } from "@/lib/chords/voicings";
-
-export function placePanel(
-  anchor: { top: number; bottom: number; left: number; width: number },
-  panel: { width: number; height: number },
-  viewport: { width: number; height: number },
-): { left: number; top: number; placement: "above" | "below" } {
-  const MARGIN = 8;
-  const GAP = 8;
-  const below = anchor.bottom + GAP;
-  const fitsBelow = below + panel.height <= viewport.height - MARGIN;
-  const top = fitsBelow ? below : Math.max(MARGIN, anchor.top - GAP - panel.height);
-  const centred = anchor.left + anchor.width / 2 - panel.width / 2;
-  const left = Math.min(Math.max(MARGIN, centred), Math.max(MARGIN, viewport.width - panel.width - MARGIN));
-  return { left, top, placement: fitsBelow ? "below" : "above" };
-}
 
 type Props = {
   token: string;
@@ -45,7 +31,7 @@ export default function ChordVisualizer({ token, anchor, onClose, focusOnOpen, o
   const pick = picks[pickKey] ?? 0;
   const setPick = (i: number) => setPicks((p) => ({ ...p, [pickKey]: i }));
   const panelRef = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; maxHeight: number } | null>(null);
 
   useLayoutEffect(() => {
     const el = panelRef.current;
@@ -53,10 +39,10 @@ export default function ChordVisualizer({ token, anchor, onClose, focusOnOpen, o
     const r = el.getBoundingClientRect();
     const next = placePanel(
       anchor,
-      { width: r.width, height: r.height },
+      { width: r.width, height: el.scrollHeight + (r.height - el.clientHeight) }, // natural height, even when capped
       { width: window.innerWidth, height: window.innerHeight },
     );
-    setPos({ left: next.left, top: next.top });
+    setPos({ left: next.left, top: next.top, maxHeight: next.maxHeight });
   }, [anchor, token, pick, instrument]);
 
   const placed = pos !== null;
@@ -74,7 +60,7 @@ export default function ChordVisualizer({ token, anchor, onClose, focusOnOpen, o
       aria-modal={false}
       aria-label={`Chord ${chord.text}`}
       className="chord-panel"
-      style={pos ? { left: pos.left, top: pos.top } : { left: 0, top: 0, visibility: "hidden" }}
+      style={pos ? { left: pos.left, top: pos.top, maxHeight: pos.maxHeight, overflowY: "auto" } : { left: 0, top: 0, visibility: "hidden" }}
       onPointerEnter={onPointerEnter}
       onPointerLeave={onPointerLeave}
     >
