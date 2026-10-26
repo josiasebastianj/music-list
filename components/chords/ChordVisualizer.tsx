@@ -3,8 +3,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import PianoDiagram from "./PianoDiagram";
+import GuitarDiagram from "./GuitarDiagram";
+import { setInstrument, useInstrument } from "./instrument";
+import { guitarVoicings, tabString, type Fingering } from "@/lib/chords/guitar";
 import { parseChord } from "@/lib/chords/parse";
-import { voicings, voicingNames } from "@/lib/chords/voicings";
+import { voicings, voicingNames, type Voicing } from "@/lib/chords/voicings";
 
 export function placePanel(
   anchor: { top: number; bottom: number; left: number; width: number },
@@ -32,12 +35,15 @@ type Props = {
 
 export default function ChordVisualizer({ token, anchor, onClose, focusOnOpen, onPointerEnter, onPointerLeave }: Props) {
   const chord = parseChord(token);
-  const vs = chord ? voicings(chord) : [];
-  // Keyed by token: a selection belongs to one chord, so a new chord starts at 0
+  const instrument = useInstrument();
+  const guitar = instrument === "guitar";
+  const vs: { name: string }[] = chord ? (guitar ? guitarVoicings(chord) : voicings(chord)) : [];
+  // Keyed by instrument and token: a selection belongs to one chord, so a new chord starts at 0
   // without an effect that resets state after render.
   const [picks, setPicks] = useState<Record<string, number>>({});
-  const pick = picks[token] ?? 0;
-  const setPick = (i: number) => setPicks((p) => ({ ...p, [token]: i }));
+  const pickKey = `${instrument}:${token}`;
+  const pick = picks[pickKey] ?? 0;
+  const setPick = (i: number) => setPicks((p) => ({ ...p, [pickKey]: i }));
   const panelRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
 
@@ -51,16 +57,15 @@ export default function ChordVisualizer({ token, anchor, onClose, focusOnOpen, o
       { width: window.innerWidth, height: window.innerHeight },
     );
     setPos({ left: next.left, top: next.top });
-  }, [anchor, token, pick]);
+  }, [anchor, token, pick, instrument]);
 
   const placed = pos !== null;
   useEffect(() => {
     if (focusOnOpen && placed) panelRef.current?.querySelector("button")?.focus();
   }, [focusOnOpen, placed]);
 
-  if (!chord || vs.length === 0) return null;
+  if (!chord) return null;
   const v = vs[Math.min(pick, vs.length - 1)];
-  const names = voicingNames(chord, v);
 
   return createPortal(
     <div
@@ -80,6 +85,14 @@ export default function ChordVisualizer({ token, anchor, onClose, focusOnOpen, o
         </button>
       </div>
 
+      <div className="chord-panel-voicings" role="group" aria-label="Instrument">
+        {(["keyboard", "guitar"] as const).map((i) => (
+          <button key={i} type="button" className="chord-panel-voicing" aria-pressed={i === instrument} onClick={() => setInstrument(i)}>
+            {i === "keyboard" ? "Keyboard" : "Guitar"}
+          </button>
+        ))}
+      </div>
+
       {vs.length > 1 && (
         <div className="chord-panel-voicings" role="group" aria-label="Voicings">
           {vs.map((voicing, i) => (
@@ -96,8 +109,19 @@ export default function ChordVisualizer({ token, anchor, onClose, focusOnOpen, o
         </div>
       )}
 
-      <PianoDiagram voicing={v} labels={names} label={`${chord.text}, ${v.name}: ${names.join(" ")}`} />
-      <p className="chord-panel-notes">{names.join(" · ")}</p>
+      {!v ? (
+        <p className="chord-panel-notes">No guitar shape for this chord yet.</p>
+      ) : guitar ? (
+        <>
+          <GuitarDiagram fingering={v as Fingering} label={`${chord.text}, ${v.name}: ${tabString((v as Fingering).frets)}`} />
+          <p className="chord-panel-notes">Tab (low E to high e): {tabString((v as Fingering).frets)}</p>
+        </>
+      ) : (
+        <>
+          <PianoDiagram voicing={v as Voicing} labels={voicingNames(chord, v as Voicing)} label={`${chord.text}, ${v.name}: ${voicingNames(chord, v as Voicing).join(" ")}`} />
+          <p className="chord-panel-notes">{voicingNames(chord, v as Voicing).join(" · ")}</p>
+        </>
+      )}
     </div>,
     document.body,
   );

@@ -4,6 +4,7 @@ export type ChordSymbol = {
   rootLetter: string; // the letter the root is written on: "B" for Bb, "F" for F#
   bass: number | null;
   bassLetter: string | null;
+  quality: string; // canonical suffix: "" major, "m" minor, "m7" for min7
   intervals: number[];
   degrees: number[];
   flats: boolean;
@@ -24,7 +25,7 @@ ROOT_PC["B#"] = 0;
 // [semitone interval, diatonic degree]. The degree is what makes spelling
 // correct: C9's seventh is the 7th degree, so it is spelled Bb, never A#.
 type Tone = [number, number];
-const QUALITY: Record<string, Tone[]> = {
+export const QUALITY: Record<string, Tone[]> = {
   "": [[0, 1], [4, 3], [7, 5]],
   maj: [[0, 1], [4, 3], [7, 5]], M: [[0, 1], [4, 3], [7, 5]],
   m: [[0, 1], [3, 3], [7, 5]], min: [[0, 1], [3, 3], [7, 5]],
@@ -45,10 +46,13 @@ const QUALITY: Record<string, Tone[]> = {
   "7b9": [[0, 1], [4, 3], [7, 5], [10, 7], [13, 9]], "7#9": [[0, 1], [4, 3], [7, 5], [10, 7], [15, 9]],
   "7#5": [[0, 1], [4, 3], [8, 5], [10, 7]], "9sus4": [[0, 1], [5, 4], [7, 5], [10, 7], [14, 9]],
   "6/9": [[0, 1], [4, 3], [7, 5], [9, 6], [14, 9]],
+  "7b5": [[0, 1], [4, 3], [6, 5], [10, 7]], "7#11": [[0, 1], [4, 3], [7, 5], [10, 7], [18, 11]],
+  "maj7#11": [[0, 1], [4, 3], [7, 5], [11, 7], [18, 11]], "maj7#5": [[0, 1], [4, 3], [8, 5], [11, 7]],
+  madd9: [[0, 1], [3, 3], [7, 5], [14, 9]],
 };
 // Spellings the song-sheet regex accepts for chords already in the table.
 const ALIAS: Record<string, string> = {
-  min7: "m7", Maj7: "maj7", Maj9: "maj9", "m(maj7)": "mMaj7", "+": "aug", aug7: "7#5", "+7": "7#5", "°": "dim", "°7": "dim7", ø: "m7b5",
+  maj: "", M: "", min: "m", mM7: "mMaj7", sus: "sus4", mmaj7: "mMaj7", M9: "maj9", M13: "maj13", M7: "maj7", min7: "m7", "69": "6/9", "6add9": "6/9", "7sus": "7sus4", "9sus": "9sus4", Maj7: "maj7", Maj9: "maj9", "m(maj7)": "mMaj7", "+": "aug", aug7: "7#5", "+7": "7#5", "°": "dim", "°7": "dim7", ø: "m7b5",
 };
 for (const [from, to] of Object.entries(ALIAS)) QUALITY[from] = QUALITY[to];
 
@@ -62,7 +66,9 @@ export function parseChord(token: string): ChordSymbol | null {
   if (!m) return null;
   const root = ROOT_PC[m[1]];
   if (root === undefined) return null;
-  const quality = QUALITY[m[2]];
+  // "7(b9)" reads as "7b9"; "-7" as "m7".
+  const q = m[2].replace(/[()]/g, "").replace(/^-/, "m");
+  const quality = QUALITY[q];
   if (quality === undefined) return null;
   let bass: number | null = null;
   let bassLetter: string | null = null;
@@ -78,6 +84,7 @@ export function parseChord(token: string): ChordSymbol | null {
     rootLetter: m[1][0],
     bass,
     bassLetter,
+    quality: ALIAS[q] ?? q,
     intervals: quality.map(([s]) => s),
     degrees: quality.map(([, d]) => d),
     flats: m[1].includes("b"),
